@@ -3,18 +3,19 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
+	"nosql-labs/cmd/internal/config"
+	"strconv"
 )
 
 func main() {
-	appPort, portPresent := os.LookupEnv("APP_PORT")
+	config, err := config.InitConfig()
 
-	if !portPresent {
-		log.Fatal("Environment variable APP_PORT is not present")
+	if err != nil {
+		log.Fatalf("Could not init application configuration %s", err.Error())
 	}
 
 	http.HandleFunc("/health", healthHandler)
-	http.ListenAndServe("0.0.0.0:"+appPort, nil)
+	http.ListenAndServe(config.Host+":"+strconv.Itoa(config.Port), nil)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {

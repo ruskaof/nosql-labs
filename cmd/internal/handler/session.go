@@ -17,7 +17,7 @@ func NewSessionHandler(config *config.ApplicationConfig, store session.Store) *S
 	return &SessionHandler{config: config, store: store}
 }
 
-const sessionCookieName = "x-session-id"
+const sessionCookieName = "X-Session-Id"
 
 func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {

@@ -5,3 +5,23 @@ services:
       - "${APP_PORT}:${APP_PORT}"
     env_file:
       - .env.local
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - main-network
+
+  redis:
+    image: redis:8.6.1
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB}
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+networks:
+  main-network:

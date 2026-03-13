@@ -31,7 +31,6 @@ func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) 
 	if existing := h.getExistingSession(ctx, r, ttl); existing != nil {
 		h.setSessionCookie(w, *existing)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(*existing))
 		return
 	}
 
@@ -46,7 +45,6 @@ func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.setSessionCookie(w, sessionID)
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(sessionID))
 }
 
 func (h *SessionHandler) getExistingSession(ctx context.Context, r *http.Request, ttl time.Duration) *string {

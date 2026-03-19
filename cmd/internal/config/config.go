@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
 )
@@ -18,7 +19,7 @@ type ApplicationConfig struct {
 func InitConfig() (*ApplicationConfig, error) {
 	appPortStr, portPresent := os.LookupEnv("APP_PORT")
 	if !portPresent {
-		return nil, &ApplicationConfigError{message: "Env variable APP_PORT is not present"}
+		return nil, errors.New("Env variable APP_PORT is not present")
 	}
 	appPort, err := strconv.Atoi(appPortStr)
 	if err != nil {
@@ -27,19 +28,19 @@ func InitConfig() (*ApplicationConfig, error) {
 
 	appHost, hostPresent := os.LookupEnv("APP_HOST")
 	if !hostPresent {
-		return nil, &ApplicationConfigError{message: "Env variable APP_HOST is not present"}
+		return nil, errors.New("Env variable APP_HOST is not present")
 	}
 
 	appUserSessionTTLStr, ttlPresent := os.LookupEnv("APP_USER_SESSION_TTL")
 	if !ttlPresent {
-		return nil, &ApplicationConfigError{message: "Env variable APP_USER_SESSION_TTL is not present"}
+		return nil, errors.New("Env variable APP_USER_SESSION_TTL is not present")
 	}
 	appUserSessionTTL, err := strconv.Atoi(appUserSessionTTLStr)
 	if err != nil {
 		return nil, err
 	}
 	if appUserSessionTTL <= 0 {
-		return nil, &ApplicationConfigError{message: "Env variable APP_USER_SESSION_TTL must be greater than 0"}
+		return nil, errors.New("Env variable APP_USER_SESSION_TTL must be greater than 0")
 	}
 
 	redisHost := os.Getenv("REDIS_HOST")
@@ -69,12 +70,4 @@ func InitConfig() (*ApplicationConfig, error) {
 		RedisPassword:     redisPassword,
 		RedisDB:           redisDB,
 	}, nil
-}
-
-type ApplicationConfigError struct {
-	message string
-}
-
-func (e *ApplicationConfigError) Error() string {
-	return e.message
 }

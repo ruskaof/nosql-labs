@@ -6,6 +6,8 @@ import (
 	"nosql-labs/cmd/internal/config"
 	"nosql-labs/cmd/internal/session"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type SessionHandler struct {
@@ -28,7 +30,12 @@ func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) 
 	ctx := context.Background()
 	ttl := time.Duration(h.config.AppUserSessionTTL) * time.Second
 
-	if existing := h.getExistingSession(ctx, r, ttl); existing != nil {
+	existing, err := h.getExistingSession(ctx, r, ttl)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if existing != nil {
 		h.setSessionCookie(w, *existing)
 		w.WriteHeader(http.StatusOK)
 		return
@@ -47,19 +54,22 @@ func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *SessionHandler) getExistingSession(ctx context.Context, r *http.Request, ttl time.Duration) *string {
+func (h *SessionHandler) getExistingSession(ctx context.Context, r *http.Request, ttl time.Duration) (*string, error) {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil || c.Value == "" {
-		return nil
+		return nil, err
 	}
 	exists, err := h.store.Exists(ctx, c.Value)
 	if err != nil || !exists {
-		return nil
+		if err == redis.Nil {
+			return nil, nil
+		}
+		return nil, err
 	}
 	if err := h.store.Update(ctx, c.Value, ttl); err != nil {
-		return nil
+		return nil, err
 	}
-	return &c.Value
+	return &c.Value, nil
 }
 
 func (h *SessionHandler) setSessionCookie(w http.ResponseWriter, sessionID string) {

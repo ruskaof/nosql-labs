@@ -15,7 +15,7 @@ func NewHttpHandler(config *config.ApplicationConfig, store session.Store) *Http
 }
 
 func (h *HttpHandler) HealthHandler(w http.ResponseWriter, r *http.Request) {
-	h.sessionHandler.EchoSessionCookie(w, r)
+	h.sessionHandler.WriteSessionCookie(w, r)
 	w.Write([]byte("{\"status\":\"ok\"}"))
 }
 

@@ -82,7 +82,7 @@ func (h *SessionHandler) setSessionCookie(w http.ResponseWriter, sessionID strin
 	})
 }
 
-func (h *SessionHandler) EchoSessionCookie(w http.ResponseWriter, r *http.Request) {
+func (h *SessionHandler) WriteSessionCookie(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(sessionCookieName); err == nil && c.Value != "" {
 		h.setSessionCookie(w, c.Value)
 	}

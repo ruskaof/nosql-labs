@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"nosql-labs/cmd/internal/config"
 	"nosql-labs/cmd/internal/session"
@@ -56,7 +57,10 @@ func (h *SessionHandler) SessionHandler(w http.ResponseWriter, r *http.Request) 
 
 func (h *SessionHandler) getExistingSession(ctx context.Context, r *http.Request, ttl time.Duration) (*string, error) {
 	c, err := r.Cookie(sessionCookieName)
-	if err != nil || c.Value == "" {
+	if errors.Is(err, http.ErrNoCookie) {
+		return nil, nil
+	}
+	if err != nil {
 		return nil, err
 	}
 	exists, err := h.store.Exists(ctx, c.Value)

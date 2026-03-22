@@ -94,7 +94,10 @@ func (h *SessionHandler) RefreshSessionForPost(w http.ResponseWriter, r *http.Re
 	ctx := context.Background()
 	ttl := time.Duration(h.config.AppUserSessionTTL) * time.Second
 	c, err := r.Cookie(sessionCookieName)
-	if err != nil || c.Value == "" {
+	if errors.Is(err, http.ErrNoCookie) || (err == nil && c.Value == "") {
+		return nil
+	}
+	if err != nil {
 		return err
 	}
 	exists, err := h.store.Exists(ctx, c.Value)

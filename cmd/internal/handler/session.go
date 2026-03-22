@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"nosql-labs/cmd/internal/config"
-	"nosql-labs/cmd/internal/session"
+	"nosql-labs/cmd/internal/db/session"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -13,10 +13,10 @@ import (
 
 type SessionHandler struct {
 	config *config.ApplicationConfig
-	store  session.Store
+	store  session.SessionStore
 }
 
-func NewSessionHandler(config *config.ApplicationConfig, store session.Store) *SessionHandler {
+func NewSessionHandler(config *config.ApplicationConfig, store session.SessionStore) *SessionHandler {
 	return &SessionHandler{config: config, store: store}
 }
 
@@ -84,6 +84,28 @@ func (h *SessionHandler) setSessionCookie(w http.ResponseWriter, sessionID strin
 		MaxAge:   h.config.AppUserSessionTTL,
 		HttpOnly: true,
 	})
+}
+
+func (h *SessionHandler) SetSessionID(w http.ResponseWriter, sessionID string) {
+	h.setSessionCookie(w, sessionID)
+}
+
+func (h *SessionHandler) RefreshSessionForPost(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.Background()
+	ttl := time.Duration(h.config.AppUserSessionTTL) * time.Second
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil || c.Value == "" {
+		return err
+	}
+	exists, err := h.store.Exists(ctx, c.Value)
+	if err != nil || !exists {
+		return err
+	}
+	if err := h.store.Update(ctx, c.Value, ttl); err != nil {
+		return err
+	}
+	h.setSessionCookie(w, c.Value)
+	return nil
 }
 
 func (h *SessionHandler) WriteSessionCookie(w http.ResponseWriter, r *http.Request) {

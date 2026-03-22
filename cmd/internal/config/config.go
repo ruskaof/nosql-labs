@@ -2,6 +2,8 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -14,6 +16,12 @@ type ApplicationConfig struct {
 	RedisPort         int
 	RedisPassword     string
 	RedisDB           int
+	MongoDatabase     string
+	MongoHost         string
+	MongoPort         int
+	MongoUser         string
+	MongoPassword     string
+	MongoAuthSource   string
 }
 
 func InitConfig() (*ApplicationConfig, error) {
@@ -61,6 +69,30 @@ func InitConfig() (*ApplicationConfig, error) {
 		}
 	}
 
+	mongoDatabase := os.Getenv("MONGODB_DATABSE")
+	if mongoDatabase == "" {
+		mongoDatabase = os.Getenv("MONGODB_DATABASE")
+	}
+	if mongoDatabase == "" {
+		return nil, errors.New("Env variable MONGODB_DATABSE (or MONGODB_DATABASE) is not present")
+	}
+	mongoHost := os.Getenv("MONGODB_HOST")
+	if mongoHost == "" {
+		mongoHost = "localhost"
+	}
+	mongoPort := 27017
+	if s := os.Getenv("MONGODB_PORT"); s != "" {
+		if p, err := strconv.Atoi(s); err == nil {
+			mongoPort = p
+		}
+	}
+	mongoUser := os.Getenv("MONGODB_USER")
+	mongoPassword := os.Getenv("MONGODB_PASSWORD")
+	mongoAuthSource := os.Getenv("MONGODB_AUTH_SOURCE")
+	if mongoAuthSource == "" {
+		mongoAuthSource = "admin"
+	}
+
 	return &ApplicationConfig{
 		Port:              appPort,
 		Host:              appHost,
@@ -69,5 +101,21 @@ func InitConfig() (*ApplicationConfig, error) {
 		RedisPort:         redisPort,
 		RedisPassword:     redisPassword,
 		RedisDB:           redisDB,
+		MongoDatabase:     mongoDatabase,
+		MongoHost:         mongoHost,
+		MongoPort:         mongoPort,
+		MongoUser:         mongoUser,
+		MongoPassword:     mongoPassword,
+		MongoAuthSource:   mongoAuthSource,
 	}, nil
+}
+
+func (c *ApplicationConfig) MongoURI() string {
+	host := fmt.Sprintf("%s:%d", c.MongoHost, c.MongoPort)
+	db := c.MongoDatabase
+	if c.MongoUser == "" && c.MongoPassword == "" {
+		return "mongodb://" + host + "/" + db
+	}
+	user := url.UserPassword(c.MongoUser, c.MongoPassword)
+	return fmt.Sprintf("mongodb://%s@%s/%s?authSource=%s", user.String(), host, url.PathEscape(db), url.QueryEscape(c.MongoAuthSource))
 }

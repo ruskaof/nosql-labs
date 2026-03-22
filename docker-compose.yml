@@ -8,6 +8,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     networks:
       - main-network
 
@@ -22,6 +24,24 @@ services:
       - main-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+
+  mongo:
+    image: mongo:8.2.6
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABSE}
+    ports:
+      - "${MONGODB_PORT}:27017"
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 networks:
   main-network:

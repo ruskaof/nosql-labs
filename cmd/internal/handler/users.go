@@ -43,7 +43,7 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if c != nil && c.Value != "" {	
+	if c != nil && c.Value != "" {
 		exists, err := h.sessionStore.Exists(ctx, c.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -75,10 +75,11 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = h.sessionStore.Delete(ctx, c.Value)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	if c != nil && c.Value != "" {
+		if err := h.sessionStore.Delete(ctx, c.Value); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := h.sessionStore.SaveWithUser(ctx, sessionID, userID.Hex(), ttl); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

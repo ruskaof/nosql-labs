@@ -87,13 +87,11 @@ func (h *HttpHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(map[string]string{"id": id.Hex()})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(map[string]string{"id": id.Hex()}); err != nil {
+		return
+	}
 }
 
 func (h *HttpHandler) ListEvents(w http.ResponseWriter, r *http.Request) {

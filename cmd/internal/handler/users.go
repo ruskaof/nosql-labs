@@ -39,18 +39,20 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c, err := r.Cookie(sessionCookieName)
-	if err != nil || c.Value == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	exists, err := h.sessionStore.Exists(ctx, c.Value)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if !exists {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
+	if c != nil && c.Value != "" {	
+		exists, err := h.sessionStore.Exists(ctx, c.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if !exists {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 	}
 
 	passwordHash, err := HashPassword(*body.Password)

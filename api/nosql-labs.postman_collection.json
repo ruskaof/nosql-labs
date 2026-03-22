@@ -3,45 +3,164 @@
     "_postman_id": "79d6d0cf-20a2-4457-82f2-aa21619ff8d6",
     "name": "nosql-labs",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "20170680"
+    "_exporter_id": "20170680",
+    "description": "API for nosql-labs (health + session). Base URL: http://localhost:8080"
   },
   "item": [
     {
-      "name": "healthcheck",
-      "event": [
+      "name": "Health",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {\r",
-              "    pm.response.to.have.status(200);\r",
-              "});\r",
-              "\r",
-              "pm.test(\"Body matches string\", function () {\r",
-              "    pm.expect(pm.response.text()).to.be(\"{\\\"status\\\":\\\"ok\\\"}\");\r",
-              "});"
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "localhost:8080/health",
-          "host": [
-            "localhost"
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Body is JSON with status ok\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"status\", \"ok\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
           ],
-          "port": "8080",
-          "path": [
-            "health"
-          ]
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["health"]
+            },
+            "description": "Health check. If request includes cookie `x-session-id`, the response echoes it back (no Redis access)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /health (with session cookie)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Session cookie is echoed\", function () {",
+                  "    const cookie = pm.cookies.get('x-session-id');",
+                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["health"]
+            },
+            "description": "Call after creating a session; sends stored cookie. Response echoes the cookie."
+          },
+          "response": []
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "Session",
+      "item": [
+        {
+          "name": "POST /session (create)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});",
+                  "pm.test(\"Session cookie is set\", function () {",
+                  "    pm.expect(pm.response.headers.has('Set-Cookie')).to.be.true;",
+                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/session",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["session"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "Create a new session. Response has empty body; session id is set in cookie `x-session-id`."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /session (refresh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Body is empty\", function () {",
+                  "    pm.expect(pm.response.text()).to.be.empty;",
+                  "});",
+                  "pm.test(\"Session cookie is set\", function () {",
+                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/session",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["session"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": "Refresh existing session. Send this request with the cookie from a previous POST /session (e.g. run after \"POST /session (create)\"); server updates TTL and returns 200 with empty body."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

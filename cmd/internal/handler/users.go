@@ -39,7 +39,7 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c, err := r.Cookie(sessionCookieName)
-	if err != nil {
+	if !errors.Is(err, http.ErrNoCookie) && err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

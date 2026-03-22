@@ -31,9 +31,9 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGODB_DATABSE}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
     ports:
-      - "${MONGODB_PORT}:27017"
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
     networks:
       - main-network
     healthcheck:

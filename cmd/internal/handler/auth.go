@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/model"
@@ -87,10 +88,14 @@ func (h *HttpHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if c == nil || c.Value == "" {
+	if c.Value == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

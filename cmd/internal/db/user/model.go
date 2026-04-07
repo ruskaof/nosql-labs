@@ -8,3 +8,9 @@ type UserRecord struct {
 	Username     string        `bson:"username"`
 	PasswordHash string        `bson:"password_hash"`
 }
+
+type PublicUser struct {
+	ID       string `json:"id"`
+	FullName string `json:"full_name"`
+	Username string `json:"username"`
+}

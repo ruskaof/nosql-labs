@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"nosql-labs/cmd/internal/db/event"
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/db/user"
 	"nosql-labs/cmd/internal/model"
+	"strconv"
 	"time"
 )
 
@@ -87,4 +89,111 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	h.sessionHandler.SetSessionID(w, sessionID)
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *HttpHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	q := r.URL.Query()
+
+	var limit int64
+	var hasLimit bool
+	if q.Has("limit") {
+		lu, err := strconv.ParseUint(q.Get("limit"), 10, 64)
+		if err != nil {
+			h.sessionHandler.WriteSessionCookie(w, r)
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("limit"))
+			return
+		}
+		limit = int64(lu)
+		hasLimit = true
+	}
+	var offset int64
+	if q.Has("offset") {
+		ou, err := strconv.ParseUint(q.Get("offset"), 10, 64)
+		if err != nil {
+			h.sessionHandler.WriteSessionCookie(w, r)
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("offset"))
+			return
+		}
+		offset = int64(ou)
+	}
+	if hasLimit && limit == 0 {
+		h.sessionHandler.WriteSessionCookie(w, r)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"users": []user.PublicUser{},
+			"count": 0,
+		})
+		return
+	}
+
+	users, err := h.userStore.List(r.Context(), user.ListFilter{
+		ID:     q.Get("id"),
+		Name:   q.Get("name"),
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.sessionHandler.WriteSessionCookie(w, r)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"users": users,
+		"count": len(users),
+	})
+}
+
+func (h *HttpHandler) GetUserByID(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	u, err := h.userStore.FindByID(r.Context(), id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.sessionHandler.WriteSessionCookie(w, r)
+	if u == nil {
+		writeJSONMessage(w, http.StatusNotFound, "Not found")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(u)
+}
+
+func (h *HttpHandler) ListEventsByUserID(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	u, err := h.userStore.FindByID(r.Context(), id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.sessionHandler.WriteSessionCookie(w, r)
+	if u == nil {
+		writeJSONMessage(w, http.StatusNotFound, "User not found")
+		return
+	}
+	events, err := h.eventStore.List(r.Context(), event.ListFilter{UserID: id})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"events": events,
+		"count":  len(events),
+	})
 }

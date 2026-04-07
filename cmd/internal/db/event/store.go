@@ -93,14 +93,19 @@ func (s *EventStore) List(ctx context.Context, f ListFilter) ([]ListItem, error)
 		filter["price"] = priceFilter
 	}
 	if strings.TrimSpace(f.DateFrom) != "" || strings.TrimSpace(f.DateTo) != "" {
-		dateFilter := bson.M{}
-		if strings.TrimSpace(f.DateFrom) != "" {
-			dateFilter["$gte"] = f.DateFrom
+		startedAtExpr := bson.M{"$dateFromString": bson.M{"dateString": "$started_at"}}
+		exprAnd := bson.A{}
+		if from, ok := parseDateBoundary(f.DateFrom); ok {
+			exprAnd = append(exprAnd, bson.M{"$gte": bson.A{startedAtExpr, from}})
 		}
-		if strings.TrimSpace(f.DateTo) != "" {
-			dateFilter["$lte"] = f.DateTo
+		if to, ok := parseDateBoundary(f.DateTo); ok {
+			exprAnd = append(exprAnd, bson.M{"$lte": bson.A{startedAtExpr, to}})
 		}
-		filter["started_at"] = dateFilter
+		if len(exprAnd) == 1 {
+			filter["$expr"] = exprAnd[0]
+		} else if len(exprAnd) > 1 {
+			filter["$expr"] = bson.M{"$and": exprAnd}
+		}
 	}
 
 	opts := options.Find().
@@ -141,6 +146,23 @@ func (s *EventStore) List(ctx context.Context, f ListFilter) ([]ListItem, error)
 		out = []ListItem{}
 	}
 	return out, nil
+}
+
+func parseDateBoundary(s string) (time.Time, bool) {
+	v := strings.TrimSpace(s)
+	if v == "" {
+		return time.Time{}, false
+	}
+	if t, err := time.Parse("2006-01-02T15:04:05", v); err == nil {
+		return t, true
+	}
+	if t, err := time.Parse("20060102", v); err == nil {
+		return t, true
+	}
+	if t, err := time.Parse(time.RFC3339, v); err == nil {
+		return t, true
+	}
+	return time.Time{}, false
 }
 
 func (s *EventStore) FindByID(ctx context.Context, idHex string) (*ListItem, error) {

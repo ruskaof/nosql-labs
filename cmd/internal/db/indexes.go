@@ -20,8 +20,7 @@ func EnsureIndexes(ctx context.Context, database *mongo.Database) error {
 	}
 	_, err = database.Collection("events").Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "title", Value: 1}},
-			Options: options.Index().SetUnique(true),
+			Keys: bson.D{{Key: "title", Value: 1}},
 		},
 		{
 			Keys: bson.D{{Key: "title", Value: 1}, {Key: "created_by", Value: 1}},

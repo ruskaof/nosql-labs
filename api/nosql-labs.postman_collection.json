@@ -26,6 +26,10 @@
     {
       "key": "eventId",
       "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
     }
   ],
   "item": [
@@ -420,6 +424,171 @@
           "response": []
         },
         {
+          "name": "PATCH /events/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"No body\", function () { pm.expect(pm.response.text()).to.be.empty; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"party\",\n  \"price\": 0,\n  \"city\": \"Москва\"\n}"
+            },
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Event by id\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(pm.collectionVariables.get('eventId'));",
+                  "    pm.expect(j).to.have.property('category', 'party');",
+                  "    pm.expect(j).to.have.property('price', 0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events (task4 filters)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Filtered list\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.keys('events', 'count');",
+                  "    pm.expect(j.count).to.eql(j.events.length);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events?id={{eventId}}&category=party&city=Москва&price_to=0&date_from=20260314",
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /users (search)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Users list\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.keys('users', 'count');",
+                  "    pm.expect(j.count).to.eql(j.users.length);",
+                  "    const u = (j.users || []).find(x => x.username === pm.collectionVariables.get('username'));",
+                  "    pm.expect(u).to.exist;",
+                  "    pm.collectionVariables.set('userId', u.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?name=Джон&limit=10&offset=0",
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /users/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"User by id\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(pm.collectionVariables.get('userId'));",
+                  "    pm.expect(j.username).to.eql(pm.collectionVariables.get('username'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /users/{id}/events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"User events\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.keys('events', 'count');",
+                  "    pm.expect(j.count).to.eql(j.events.length);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{userId}}/events",
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
           "name": "POST /auth/logout",
           "event": [
             {
@@ -605,6 +774,63 @@
             "header": [],
             "url": "{{baseUrl}}/events?limit=not-a-number",
             "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /events/{id} (400 invalid category)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"invalid category field\", function () {",
+                  "    pm.expect(pm.response.json().message).to.include('category');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"invalid\"\n}"
+            },
+            "description": "task4"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /users (400 invalid limit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"invalid limit field\", function () {",
+                  "    pm.expect(pm.response.json().message).to.include('limit');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?limit=bad",
+            "description": "task4"
           },
           "response": []
         }

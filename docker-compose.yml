@@ -133,7 +133,7 @@ services:
       mongo-config-3:
         condition: service_started
     ports:
-      - "${MONGODB_PORT}:${MONGODB_PORT}"
+      - "${MONGODB_PORT}:27017"
     networks:
       - main-network
     healthcheck:

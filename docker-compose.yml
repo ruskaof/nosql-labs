@@ -99,6 +99,39 @@ services:
     volumes:
       - mongo-shard1-3-data:/data/db
 
+  mongo-shard2-1:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "27019", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-1-data:/data/db
+
+  mongo-shard2-2:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "27019", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-2-data:/data/db
+
+  mongo-shard2-3:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "27019", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-3-data:/data/db
+
   mongo-init:
     image: mongo:8.2.6
     depends_on:
@@ -109,6 +142,12 @@ services:
       mongo-shard1-2:
         condition: service_started
       mongo-shard1-3:
+        condition: service_started
+      mongo-shard2-1:
+        condition: service_started
+      mongo-shard2-2:
+        condition: service_started
+      mongo-shard2-3:
         condition: service_started
       mongo:
         condition: service_started
@@ -121,6 +160,7 @@ services:
         set -e
         mongosh --host mongo-config-1 --port 27017 --eval 'rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"mongo-config-1:27017"},{_id:1,host:"mongo-config-2:27017"},{_id:2,host:"mongo-config-3:27017"}]})' || true
         mongosh --host mongo-shard1-1 --port 27018 --eval 'rs.initiate({_id:"shard1ReplSet",members:[{_id:0,host:"mongo-shard1-1:27018"},{_id:1,host:"mongo-shard1-2:27018"},{_id:2,host:"mongo-shard1-3:27018"}]})' || true
+        mongosh --host mongo-shard2-1 --port 27019 --eval 'rs.initiate({_id:"shard2ReplSet",members:[{_id:0,host:"mongo-shard2-1:27019"},{_id:1,host:"mongo-shard2-2:27019"},{_id:2,host:"mongo-shard2-3:27019"}]})' || true
         for i in $(seq 1 60); do
           if mongosh --host mongo --port 27017 --quiet --eval 'db.adminCommand({listShards:1}).ok' | grep -q "1"; then
             break
@@ -129,6 +169,12 @@ services:
         done
         for i in $(seq 1 60); do
           if mongosh --host mongo --port 27017 --quiet --eval 'sh.addShard("shard1ReplSet/mongo-shard1-1:27018,mongo-shard1-2:27018,mongo-shard1-3:27018").ok' | grep -q "1"; then
+            break
+          fi
+          sleep 2
+        done
+        for i in $(seq 1 60); do
+          if mongosh --host mongo --port 27017 --quiet --eval 'sh.addShard("shard2ReplSet/mongo-shard2-1:27019,mongo-shard2-2:27019,mongo-shard2-3:27019").ok' | grep -q "1"; then
             break
           fi
           sleep 2
@@ -167,3 +213,6 @@ volumes:
   mongo-shard1-1-data:
   mongo-shard1-2-data:
   mongo-shard1-3-data:
+  mongo-shard2-1-data:
+  mongo-shard2-2-data:
+  mongo-shard2-3-data:

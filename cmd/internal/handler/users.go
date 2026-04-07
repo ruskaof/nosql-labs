@@ -185,7 +185,101 @@ func (h *HttpHandler) ListEventsByUserID(w http.ResponseWriter, r *http.Request,
 		writeJSONMessage(w, http.StatusNotFound, "User not found")
 		return
 	}
-	events, err := h.eventStore.List(r.Context(), event.ListFilter{UserID: id})
+
+	q := r.URL.Query()
+	title := q.Get("title")
+	eventID := q.Get("id")
+	category := q.Get("category")
+	city := q.Get("city")
+
+	var limit int64
+	var hasLimit bool
+	if q.Has("limit") {
+		lu, err := strconv.ParseUint(q.Get("limit"), 10, 64)
+		if err != nil {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("limit"))
+			return
+		}
+		limit = int64(lu)
+		hasLimit = true
+	}
+	var offset int64
+	if q.Has("offset") {
+		ou, err := strconv.ParseUint(q.Get("offset"), 10, 64)
+		if err != nil {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("offset"))
+			return
+		}
+		offset = int64(ou)
+	}
+
+	if category != "" {
+		if _, ok := validEventCategories[category]; !ok {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("category"))
+			return
+		}
+	}
+
+	var priceFrom *uint64
+	if q.Has("price_from") {
+		v, err := strconv.ParseUint(q.Get("price_from"), 10, 64)
+		if err != nil {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("price_from"))
+			return
+		}
+		priceFrom = &v
+	}
+	var priceTo *uint64
+	if q.Has("price_to") {
+		v, err := strconv.ParseUint(q.Get("price_to"), 10, 64)
+		if err != nil {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("price_to"))
+			return
+		}
+		priceTo = &v
+	}
+	if priceFrom != nil && priceTo != nil && *priceFrom > *priceTo {
+		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("price_from"))
+		return
+	}
+
+	dateFromRaw := q.Get("date_from")
+	if dateFromRaw == "" {
+		dateFromRaw = q.Get("started_date_from")
+	}
+	dateToRaw := q.Get("date_to")
+	if dateToRaw == "" {
+		dateToRaw = q.Get("started_date_to")
+	}
+	dateFrom, dateTo, dateErrField := normalizeDateRange(dateFromRaw, dateToRaw)
+	if dateErrField != "" {
+		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage(dateErrField))
+		return
+	}
+
+	if hasLimit && limit == 0 {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"events": []event.ListItem{},
+			"count":  0,
+		})
+		return
+	}
+
+	events, err := h.eventStore.List(r.Context(), event.ListFilter{
+		ID:        eventID,
+		Title:     title,
+		Category:  category,
+		City:      city,
+		UserID:    id,
+		PriceFrom: priceFrom,
+		PriceTo:   priceTo,
+		DateFrom:  dateFrom,
+		DateTo:    dateTo,
+		Limit:     limit,
+		Offset:    offset,
+	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

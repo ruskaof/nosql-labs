@@ -111,7 +111,7 @@ services:
       mongo-shard1-3:
         condition: service_started
       mongo:
-        condition: service_healthy
+        condition: service_started
     networks:
       - main-network
     entrypoint:

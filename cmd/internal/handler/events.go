@@ -353,14 +353,14 @@ func normalizeDateRange(dateFromRaw, dateToRaw string) (string, string, string) 
 		if err != nil {
 			return "", "", "date_from"
 		}
-		dateFrom = t.Format("2006-01-02T00:00:00")
+		dateFrom = t.Format("2006-01-02") + "T00:00:00+03:00"
 	}
 	if strings.TrimSpace(dateToRaw) != "" {
 		t, err := time.Parse("20060102", dateToRaw)
 		if err != nil {
 			return "", "", "date_to"
 		}
-		dateTo = t.Format("2006-01-02T23:59:59")
+		dateTo = t.Format("2006-01-02") + "T23:59:59+03:00"
 	}
 	return dateFrom, dateTo, ""
 }

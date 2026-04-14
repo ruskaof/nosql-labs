@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 func writeJSONMessage(w http.ResponseWriter, status int, message string) {
@@ -24,4 +25,27 @@ func isStringValid(s *string) bool {
 		return false
 	}
 	return *s != ""
+}
+
+type requiredField struct {
+	name  string
+	value *string
+}
+
+func validateRequiredFields(w http.ResponseWriter, fields ...requiredField) bool {
+	for _, field := range fields {
+		if !isStringValid(field.value) {
+			writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage(field.name))
+			return false
+		}
+	}
+	return true
+}
+
+func validateRFC3339Field(w http.ResponseWriter, field string, value *string) bool {
+	if _, err := time.Parse(time.RFC3339, *value); err != nil {
+		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage(field))
+		return false
+	}
+	return true
 }

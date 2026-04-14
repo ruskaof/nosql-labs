@@ -7,7 +7,6 @@ import (
 	"nosql-labs/cmd/internal/db/event"
 	"nosql-labs/cmd/internal/model"
 	"strconv"
-	"time"
 )
 
 func (h *HttpHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
@@ -24,29 +23,19 @@ func (h *HttpHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !isStringValid(body.Title) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("title"))
-		return
-	}
-	if !isStringValid(body.Address) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("address"))
-		return
-	}
-	if !isStringValid(body.StartedAt) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("started_at"))
-		return
-	}
-	if !isStringValid(body.FinishedAt) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("finished_at"))
+	if !validateRequiredFields(w,
+		requiredField{name: "title", value: body.Title},
+		requiredField{name: "address", value: body.Address},
+		requiredField{name: "started_at", value: body.StartedAt},
+		requiredField{name: "finished_at", value: body.FinishedAt},
+	) {
 		return
 	}
 
-	if _, err := time.Parse(time.RFC3339, *body.StartedAt); err != nil {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("started_at"))
+	if !validateRFC3339Field(w, "started_at", body.StartedAt) {
 		return
 	}
-	if _, err := time.Parse(time.RFC3339, *body.FinishedAt); err != nil {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("finished_at"))
+	if !validateRFC3339Field(w, "finished_at", body.FinishedAt) {
 		return
 	}
 

@@ -25,16 +25,11 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !isStringValid(body.FullName) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("full_name"))
-		return
-	}
-	if !isStringValid(body.Username) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("username"))
-		return
-	}
-	if !isStringValid(body.Password) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("password"))
+	if !validateRequiredFields(w,
+		requiredField{name: "full_name", value: body.FullName},
+		requiredField{name: "username", value: body.Username},
+		requiredField{name: "password", value: body.Password},
+	) {
 		return
 	}
 

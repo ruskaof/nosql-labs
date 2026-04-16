@@ -164,22 +164,22 @@ services:
         MONGO_SHARD1_PORT="${MONGO_SHARD1_PORT:-27018}"
         MONGO_SHARD2_PORT="${MONGO_SHARD2_PORT:-27019}"
         MONGO_MONGOS_PORT="${MONGO_MONGOS_PORT:-27017}"
-        mongosh --host mongo-config-1 --port "$MONGO_CONFIG_PORT" --eval 'rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"mongo-config-1:'"$MONGO_CONFIG_PORT"'"},{_id:1,host:"mongo-config-2:'"$MONGO_CONFIG_PORT"'"},{_id:2,host:"mongo-config-3:'"$MONGO_CONFIG_PORT"'"'}]})' || true
-        mongosh --host mongo-shard1-1 --port "$MONGO_SHARD1_PORT" --eval 'rs.initiate({_id:"shard1ReplSet",members:[{_id:0,host:"mongo-shard1-1:'"$MONGO_SHARD1_PORT"'"},{_id:1,host:"mongo-shard1-2:'"$MONGO_SHARD1_PORT"'"},{_id:2,host:"mongo-shard1-3:'"$MONGO_SHARD1_PORT"'"'}]})' || true
-        mongosh --host mongo-shard2-1 --port "$MONGO_SHARD2_PORT" --eval 'rs.initiate({_id:"shard2ReplSet",members:[{_id:0,host:"mongo-shard2-1:'"$MONGO_SHARD2_PORT"'"},{_id:1,host:"mongo-shard2-2:'"$MONGO_SHARD2_PORT"'"},{_id:2,host:"mongo-shard2-3:'"$MONGO_SHARD2_PORT"'"'}]})' || true
-        for i in $(seq 1 60); do
+        mongosh --host mongo-config-1 --port "$MONGO_CONFIG_PORT" --eval 'rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"mongo-config-1:'"$MONGO_CONFIG_PORT"'"},{_id:1,host:"mongo-config-2:'"$MONGO_CONFIG_PORT"'"},{_id:2,host:"mongo-config-3:'"$MONGO_CONFIG_PORT"'"}]})' || true
+        mongosh --host mongo-shard1-1 --port "$MONGO_SHARD1_PORT" --eval 'rs.initiate({_id:"shard1ReplSet",members:[{_id:0,host:"mongo-shard1-1:'"$MONGO_SHARD1_PORT"'"},{_id:1,host:"mongo-shard1-2:'"$MONGO_SHARD1_PORT"'"},{_id:2,host:"mongo-shard1-3:'"$MONGO_SHARD1_PORT"'"}]})' || true
+        mongosh --host mongo-shard2-1 --port "$MONGO_SHARD2_PORT" --eval 'rs.initiate({_id:"shard2ReplSet",members:[{_id:0,host:"mongo-shard2-1:'"$MONGO_SHARD2_PORT"'"},{_id:1,host:"mongo-shard2-2:'"$MONGO_SHARD2_PORT"'"},{_id:2,host:"mongo-shard2-3:'"$MONGO_SHARD2_PORT"'"}]})' || true
+        for i in {1..60}; do
           if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'db.adminCommand({listShards:1}).ok' | grep -q "1"; then
             break
           fi
           sleep 2
         done
-        for i in $(seq 1 60); do
+        for i in {1..60}; do
           if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'sh.addShard("shard1ReplSet/mongo-shard1-1:'"$MONGO_SHARD1_PORT"',mongo-shard1-2:'"$MONGO_SHARD1_PORT"',mongo-shard1-3:'"$MONGO_SHARD1_PORT"'").ok' | grep -q "1"; then
             break
           fi
           sleep 2
         done
-        for i in $(seq 1 60); do
+        for i in {1..60}; do
           if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'sh.addShard("shard2ReplSet/mongo-shard2-1:'"$MONGO_SHARD2_PORT"',mongo-shard2-2:'"$MONGO_SHARD2_PORT"',mongo-shard2-3:'"$MONGO_SHARD2_PORT"'").ok' | grep -q "1"; then
             break
           fi

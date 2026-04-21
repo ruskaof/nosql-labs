@@ -10,6 +10,8 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
     networks:
       - main-network
 
@@ -23,25 +25,200 @@ services:
     networks:
       - main-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "ping"]
 
-  mongo:
+  mongo-config-1:
     image: mongo:8.2.6
-    restart: always
+    command: ["mongod", "--configsvr", "--replSet", "cfgReplSet", "--port", "${MONGO_CONFIG_PORT:-27017}", "--bind_ip_all"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
-    ports:
-      - "${MONGODB_PORT}:${MONGODB_PORT}"
     networks:
       - main-network
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--quiet", "--port", "${MONGO_CONFIG_PORT:-27017}", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
+    volumes:
+      - mongo-config-1-data:/data/db
+
+  mongo-config-2:
+    image: mongo:8.2.6
+    command: ["mongod", "--configsvr", "--replSet", "cfgReplSet", "--port", "${MONGO_CONFIG_PORT:-27017}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-config-2-data:/data/db
+
+  mongo-config-3:
+    image: mongo:8.2.6
+    command: ["mongod", "--configsvr", "--replSet", "cfgReplSet", "--port", "${MONGO_CONFIG_PORT:-27017}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-config-3-data:/data/db
+
+  mongo-shard1-1:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--port", "${MONGO_SHARD1_PORT:-27018}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard1-1-data:/data/db
+
+  mongo-shard1-2:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--port", "${MONGO_SHARD1_PORT:-27018}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard1-2-data:/data/db
+
+  mongo-shard1-3:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--port", "${MONGO_SHARD1_PORT:-27018}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard1-3-data:/data/db
+
+  mongo-shard2-1:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "${MONGO_SHARD2_PORT:-27019}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-1-data:/data/db
+
+  mongo-shard2-2:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "${MONGO_SHARD2_PORT:-27019}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-2-data:/data/db
+
+  mongo-shard2-3:
+    image: mongo:8.2.6
+    command: ["mongod", "--shardsvr", "--replSet", "shard2ReplSet", "--port", "${MONGO_SHARD2_PORT:-27019}", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks:
+      - main-network
+    volumes:
+      - mongo-shard2-3-data:/data/db
+
+  mongo-init:
+    image: mongo:8.2.6
+    env_file:
+      - .env.local
+    depends_on:
+      mongo-config-1:
+        condition: service_healthy
+      mongo-shard1-1:
+        condition: service_started
+      mongo-shard1-2:
+        condition: service_started
+      mongo-shard1-3:
+        condition: service_started
+      mongo-shard2-1:
+        condition: service_started
+      mongo-shard2-2:
+        condition: service_started
+      mongo-shard2-3:
+        condition: service_started
+      mongo:
+        condition: service_started
+    networks:
+      - main-network
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        MONGO_CONFIG_PORT="${MONGO_CONFIG_PORT:-27017}"
+        MONGO_SHARD1_PORT="${MONGO_SHARD1_PORT:-27018}"
+        MONGO_SHARD2_PORT="${MONGO_SHARD2_PORT:-27019}"
+        MONGO_MONGOS_PORT="${MONGO_MONGOS_PORT:-27017}"
+        mongosh --host mongo-config-1 --port "$MONGO_CONFIG_PORT" --eval 'rs.initiate({_id:"cfgReplSet",configsvr:true,members:[{_id:0,host:"mongo-config-1:'"$MONGO_CONFIG_PORT"'"},{_id:1,host:"mongo-config-2:'"$MONGO_CONFIG_PORT"'"},{_id:2,host:"mongo-config-3:'"$MONGO_CONFIG_PORT"'"}]})' || true
+        mongosh --host mongo-shard1-1 --port "$MONGO_SHARD1_PORT" --eval 'rs.initiate({_id:"shard1ReplSet",members:[{_id:0,host:"mongo-shard1-1:'"$MONGO_SHARD1_PORT"'"},{_id:1,host:"mongo-shard1-2:'"$MONGO_SHARD1_PORT"'"},{_id:2,host:"mongo-shard1-3:'"$MONGO_SHARD1_PORT"'"}]})' || true
+        mongosh --host mongo-shard2-1 --port "$MONGO_SHARD2_PORT" --eval 'rs.initiate({_id:"shard2ReplSet",members:[{_id:0,host:"mongo-shard2-1:'"$MONGO_SHARD2_PORT"'"},{_id:1,host:"mongo-shard2-2:'"$MONGO_SHARD2_PORT"'"},{_id:2,host:"mongo-shard2-3:'"$MONGO_SHARD2_PORT"'"}]})' || true
+        for i in {1..60}; do
+          if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'db.adminCommand({listShards:1}).ok' | grep -q "1"; then
+            break
+          fi
+          sleep 2
+        done
+        for i in {1..60}; do
+          if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'sh.addShard("shard1ReplSet/mongo-shard1-1:'"$MONGO_SHARD1_PORT"',mongo-shard1-2:'"$MONGO_SHARD1_PORT"',mongo-shard1-3:'"$MONGO_SHARD1_PORT"'").ok' | grep -q "1"; then
+            break
+          fi
+          sleep 2
+        done
+        for i in {1..60}; do
+          if mongosh --host mongo --port "$MONGO_MONGOS_PORT" --quiet --eval 'sh.addShard("shard2ReplSet/mongo-shard2-1:'"$MONGO_SHARD2_PORT"',mongo-shard2-2:'"$MONGO_SHARD2_PORT"',mongo-shard2-3:'"$MONGO_SHARD2_PORT"'").ok' | grep -q "1"; then
+            break
+          fi
+          sleep 2
+        done
+        mongosh --host mongo --port "$MONGO_MONGOS_PORT" --eval 'sh.enableSharding("'"$MONGODB_DATABASE"'")' || true
+        mongosh --host mongo --port "$MONGO_MONGOS_PORT" --eval 'db.getSiblingDB("admin").runCommand({shardCollection:"'"$MONGODB_DATABASE"'.events",key:{created_by:"hashed"}})' || true
+
+  mongo:
+    image: mongo:8.2.6
+    command: ["mongos", "--configdb", "cfgReplSet/mongo-config-1:${MONGO_CONFIG_PORT:-27017},mongo-config-2:${MONGO_CONFIG_PORT:-27017},mongo-config-3:${MONGO_CONFIG_PORT:-27017}", "--bind_ip_all", "--port", "${MONGO_MONGOS_PORT:-27017}"]
+    depends_on:
+      mongo-config-1:
+        condition: service_healthy
+      mongo-config-2:
+        condition: service_started
+      mongo-config-3:
+        condition: service_started
+    ports:
+      - "${MONGODB_PORT:-27017}:${MONGO_MONGOS_PORT:-27017}"
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--port", "${MONGO_MONGOS_PORT:-27017}", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
 networks:
   main-network:
+
+volumes:
+  mongo-config-1-data:
+  mongo-config-2-data:
+  mongo-config-3-data:
+  mongo-shard1-1-data:
+  mongo-shard1-2-data:
+  mongo-shard1-3-data:
+  mongo-shard2-1-data:
+  mongo-shard2-2-data:
+  mongo-shard2-3-data:

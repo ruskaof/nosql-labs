@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+	"nosql-labs/cmd/internal/model"
 	"strings"
 	"time"
 
@@ -47,16 +48,66 @@ func (s *EventStore) Create(ctx context.Context, title, description, address, cr
 }
 
 type ListFilter struct {
-	Title  string
-	Limit  int64
-	Offset int64
+	ID        string
+	Title     string
+	Category  string
+	City      string
+	UserID    string
+	PriceFrom *uint64
+	PriceTo   *uint64
+	DateFrom  string
+	DateTo    string
+	Limit     int64
+	Offset    int64
 }
 
 func (s *EventStore) List(ctx context.Context, f ListFilter) ([]ListItem, error) {
 	filter := bson.M{}
+	if strings.TrimSpace(f.ID) != "" {
+		oid, err := bson.ObjectIDFromHex(f.ID)
+		if err != nil {
+			return []ListItem{}, nil
+		}
+		filter["_id"] = oid
+	}
 	if strings.TrimSpace(f.Title) != "" {
 		filter["title"] = bson.M{"$regex": f.Title, "$options": "i"}
 	}
+	if strings.TrimSpace(f.Category) != "" {
+		filter["category"] = f.Category
+	}
+	if strings.TrimSpace(f.City) != "" {
+		filter["location.city"] = f.City
+	}
+	if strings.TrimSpace(f.UserID) != "" {
+		filter["created_by"] = f.UserID
+	}
+	if f.PriceFrom != nil || f.PriceTo != nil {
+		priceFilter := bson.M{}
+		if f.PriceFrom != nil {
+			priceFilter["$gte"] = *f.PriceFrom
+		}
+		if f.PriceTo != nil {
+			priceFilter["$lte"] = *f.PriceTo
+		}
+		filter["price"] = priceFilter
+	}
+	if strings.TrimSpace(f.DateFrom) != "" || strings.TrimSpace(f.DateTo) != "" {
+		startedAtExpr := bson.M{"$dateFromString": bson.M{"dateString": "$started_at"}}
+		exprAnd := bson.A{}
+		if from, ok := parseDateBoundary(f.DateFrom); ok {
+			exprAnd = append(exprAnd, bson.M{"$gte": bson.A{startedAtExpr, from}})
+		}
+		if to, ok := parseDateBoundary(f.DateTo); ok {
+			exprAnd = append(exprAnd, bson.M{"$lte": bson.A{startedAtExpr, to}})
+		}
+		if len(exprAnd) == 1 {
+			filter["$expr"] = exprAnd[0]
+		} else if len(exprAnd) > 1 {
+			filter["$expr"] = bson.M{"$and": exprAnd}
+		}
+	}
+
 	opts := options.Find().
 		SetSort(bson.D{{Key: "created_at", Value: -1}}).
 		SetSkip(f.Offset)
@@ -78,6 +129,8 @@ func (s *EventStore) List(ctx context.Context, f ListFilter) ([]ListItem, error)
 		out = append(out, ListItem{
 			ID:          raw.ID.Hex(),
 			Title:       raw.Title,
+			Category:    raw.Category,
+			Price:       raw.Price,
 			Description: raw.Description,
 			Location:    raw.Location,
 			CreatedAt:   raw.CreatedAt,
@@ -93,4 +146,90 @@ func (s *EventStore) List(ctx context.Context, f ListFilter) ([]ListItem, error)
 		out = []ListItem{}
 	}
 	return out, nil
+}
+
+func parseDateBoundary(s string) (time.Time, bool) {
+	v := strings.TrimSpace(s)
+	if v == "" {
+		return time.Time{}, false
+	}
+	if t, err := time.Parse(time.RFC3339, v); err == nil {
+		return t, true
+	}
+	if t, err := time.Parse("2006-01-02T15:04:05", v); err == nil {
+		return t, true
+	}
+	if t, err := time.Parse("20060102", v); err == nil {
+		return t, true
+	}
+	return time.Time{}, false
+}
+
+func (s *EventStore) FindByID(ctx context.Context, idHex string) (*ListItem, error) {
+	oid, err := bson.ObjectIDFromHex(idHex)
+	if err != nil {
+		return nil, nil
+	}
+	var raw EventRecord
+	err = s.coll.FindOne(ctx, bson.M{"_id": oid}).Decode(&raw)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &ListItem{
+		ID:          raw.ID.Hex(),
+		Title:       raw.Title,
+		Category:    raw.Category,
+		Price:       raw.Price,
+		Description: raw.Description,
+		Location:    raw.Location,
+		CreatedAt:   raw.CreatedAt,
+		CreatedBy:   raw.CreatedBy,
+		StartedAt:   raw.StartedAt,
+		FinishedAt:  raw.FinishedAt,
+	}, nil
+}
+
+func (s *EventStore) PatchByIDAndOrganizer(ctx context.Context, idHex, organizerID string, req model.PatchEventRequest) (bool, error) {
+	oid, err := bson.ObjectIDFromHex(idHex)
+	if err != nil {
+		return false, nil
+	}
+	setDoc := bson.M{}
+	unsetDoc := bson.M{}
+	if req.Category != nil {
+		setDoc["category"] = *req.Category
+	}
+	if req.Price != nil {
+		setDoc["price"] = *req.Price
+	}
+	if req.City != nil {
+		if *req.City == "" {
+			unsetDoc["location.city"] = ""
+		} else {
+			setDoc["location.city"] = *req.City
+		}
+	}
+	update := bson.M{}
+	if len(setDoc) > 0 {
+		update["$set"] = setDoc
+	}
+	if len(unsetDoc) > 0 {
+		update["$unset"] = unsetDoc
+	}
+	if len(update) == 0 {
+		exists, err := s.coll.CountDocuments(ctx, bson.M{"_id": oid, "created_by": organizerID})
+		if err != nil {
+			return false, err
+		}
+		return exists > 0, nil
+	}
+
+	res, err := s.coll.UpdateOne(ctx, bson.M{"_id": oid, "created_by": organizerID}, update)
+	if err != nil {
+		return false, err
+	}
+	return res.MatchedCount > 0, nil
 }

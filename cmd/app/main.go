@@ -11,6 +11,7 @@ import (
 	"nosql-labs/cmd/internal/db/user"
 	"nosql-labs/cmd/internal/handler"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -54,7 +55,30 @@ func main() {
 	h := handler.NewHttpHandler(cfg, store, userStore, eventStore)
 	http.HandleFunc("/health", h.HealthHandler)
 	http.HandleFunc("/session", h.SessionHandler)
-	http.HandleFunc("/users", h.WithPostSessionRefresh(h.CreateUser))
+	http.HandleFunc("/users", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.ListUsers(w, r)
+		case http.MethodPost:
+			h.CreateUser(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	http.HandleFunc("/users/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/users/")
+		if path == "" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if strings.HasSuffix(path, "/events") {
+			id := strings.TrimSuffix(path, "/events")
+			id = strings.TrimSuffix(id, "/")
+			h.ListEventsByUserID(w, r, id)
+			return
+		}
+		h.GetUserByID(w, r, strings.TrimSuffix(path, "/"))
+	})
 	http.HandleFunc("/auth/login", h.WithPostSessionRefresh(h.Login))
 	http.HandleFunc("/auth/logout", h.Logout)
 	http.HandleFunc("/events", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +87,22 @@ func main() {
 			h.ListEvents(w, r)
 		case http.MethodPost:
 			h.CreateEvent(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	http.HandleFunc("/events/", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
+		id := strings.TrimPrefix(r.URL.Path, "/events/")
+		id = strings.TrimSuffix(id, "/")
+		if id == "" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h.GetEventByID(w, r, id)
+		case http.MethodPatch:
+			h.PatchEventByID(w, r, id)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}

@@ -23,12 +23,10 @@ func (h *HttpHandler) Login(w http.ResponseWriter, r *http.Request) {
 		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("body"))
 		return
 	}
-	if !isStringValid(body.Username) {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("username"))
-		return
-	}
-	if body.Password == nil || *body.Password == "" {
-		writeJSONMessage(w, http.StatusBadRequest, invalidFieldMessage("password"))
+	if !validateRequiredFields(w,
+		requiredField{name: "username", value: body.Username},
+		requiredField{name: "password", value: body.Password},
+	) {
 		return
 	}
 

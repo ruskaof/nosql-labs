@@ -23,6 +23,16 @@
 | `REDIS_PASSWORD` | нет | Пароль Redis (пусто — без пароля) | — |
 | `REDIS_DB` | нет | Номер базы Redis | `0` |
 
+### MongoDB
+
+| Переменная | Обязательная | Описание | По умолчанию |
+|------------|---------------|----------|--------------|
+| `MONGODB_DATABSE` | да | Имя базы данных MongoDB | — |
+| `MONGODB_USER` | да | Имя пользователя MongoDB | — |
+| `MONGODB_PASSWORD` | да | Пароль пользователя MongoDB | — |
+| `MONGODB_HOST` | да | Хост MongoDB | `mongo` |
+| `MONGODB_PORT` | да | Порт MongoDB | `27017` |
+
 
 ## Запуск проекта
 

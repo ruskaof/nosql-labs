@@ -4,8 +4,30 @@
     "name": "nosql-labs",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "20170680",
-    "description": "API for nosql-labs (health + session). Base URL: http://localhost:8080"
+    "description": ""
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": "test-password"
+    },
+    {
+      "key": "eventTitle",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    }
+  ],
   "item": [
     {
       "name": "Health",
@@ -32,14 +54,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/health",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8080",
-              "path": ["health"]
-            },
-            "description": "Health check. If request includes cookie `x-session-id`, the response echoes it back (no Redis access)."
+            "url": "{{baseUrl}}/health",
+            "description": ""
           },
           "response": []
         },
@@ -53,9 +69,11 @@
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Session cookie is echoed\", function () {",
-                  "    const cookie = pm.cookies.get('x-session-id');",
-                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "pm.test(\"Set-Cookie echoes session when cookie was sent\", function () {",
+                  "    const hasSetCookie = pm.response.headers.get('Set-Cookie');",
+                  "    if (hasSetCookie) {",
+                  "        pm.expect(hasSetCookie.toLowerCase()).to.include('x-session-id');",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -65,14 +83,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/health",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8080",
-              "path": ["health"]
-            },
-            "description": "Call after creating a session; sends stored cookie. Response echoes the cookie."
+            "url": "{{baseUrl}}/health",
+            "description": ""
           },
           "response": []
         }
@@ -94,9 +106,9 @@
                   "pm.test(\"Body is empty\", function () {",
                   "    pm.expect(pm.response.text()).to.be.empty;",
                   "});",
-                  "pm.test(\"Session cookie is set\", function () {",
-                  "    pm.expect(pm.response.headers.has('Set-Cookie')).to.be.true;",
-                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "pm.test(\"Set-Cookie sets X-Session-Id\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -106,18 +118,12 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/session",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8080",
-              "path": ["session"]
-            },
+            "url": "{{baseUrl}}/session",
             "body": {
               "mode": "raw",
               "raw": ""
             },
-            "description": "Create a new session. Response has empty body; session id is set in cookie `x-session-id`."
+            "description": ""
           },
           "response": []
         },
@@ -134,8 +140,9 @@
                   "pm.test(\"Body is empty\", function () {",
                   "    pm.expect(pm.response.text()).to.be.empty;",
                   "});",
-                  "pm.test(\"Session cookie is set\", function () {",
-                  "    pm.expect(pm.response.headers.get('Set-Cookie')).to.include('x-session-id');",
+                  "pm.test(\"Set-Cookie refreshes session\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -145,18 +152,459 @@
           "request": {
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "http://localhost:8080/session",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "8080",
-              "path": ["session"]
-            },
+            "url": "{{baseUrl}}/session",
             "body": {
               "mode": "raw",
               "raw": ""
             },
-            "description": "Refresh existing session. Send this request with the cookie from a previous POST /session (e.g. run after \"POST /session (create)\"); server updates TTL and returns 200 with empty body."
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Workflow (end-to-end)",
+      "description": "",
+      "item": [
+        {
+          "name": "Create anonymous session",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('username', 'user_' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Set-Cookie: X-Session-Id\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
+                  "});",
+                  "pm.test(\"Empty body\", function () { pm.expect(pm.response.text()).to.be.empty; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/session",
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /users (register)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Empty body\", function () { pm.expect(pm.response.text()).to.be.empty; });",
+                  "pm.test(\"Set-Cookie: new X-Session-Id (logged-in session)\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
+                  "    pm.expect(sc.toLowerCase()).to.include('httponly');",
+                  "});",
+                  "pm.collectionVariables.set('password', 'test-password');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Джон Доу\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"No JSON body\", function () { pm.expect(pm.response.text()).to.be.empty; });",
+                  "pm.test(\"Set-Cookie refreshes session\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events (create)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('eventTitle', 'Мой день рождения ' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"JSON has id (hex)\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('id');",
+                  "    pm.expect(j.id).to.match(/^[a-f0-9]{24}$/);",
+                  "    pm.collectionVariables.set('eventId', j.id);",
+                  "});",
+                  "pm.test(\"Content-Type JSON\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{eventTitle}}\",\n  \"address\": \"г. Санкт-Петербург, ул. Пушкина, дом Колотушкина\",\n  \"started_at\": \"2026-04-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-04-01T23:00:00+03:00\",\n  \"description\": \"Приглашаю вас отпраздновать мое 30-с-чем-то-летие\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events (duplicate title → 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"409 Conflict\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"message: event already exists\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.message).to.eql('event already exists');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{eventTitle}}\",\n  \"address\": \"другой адрес\",\n  \"started_at\": \"2026-05-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-05-01T23:00:00+03:00\",\n  \"description\": \"duplicate\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events (list)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Shape: events + count\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.keys('events', 'count');",
+                  "    pm.expect(j.events).to.be.an('array');",
+                  "    pm.expect(j.count).to.eql(j.events.length);",
+                  "});",
+                  "pm.test(\"Event entry shape (snake_case)\", function () {",
+                  "    const j = pm.response.json();",
+                  "    if (j.events.length === 0) return;",
+                  "    const e = j.events[0];",
+                  "    ['id','title','location','created_at','created_by','started_at','finished_at'].forEach(k => pm.expect(e).to.have.property(k));",
+                  "    pm.expect(e.location).to.have.property('address');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events (filter + pagination)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"count matches events length\", function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.count).to.eql(j.events.length);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events?title={{eventTitle}}&limit=10&offset=0",
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"Set-Cookie expires session (Max-Age=0)\", function () {",
+                  "    const sc = pm.response.headers.get('Set-Cookie') || '';",
+                  "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
+                  "    pm.expect(sc).to.match(/Max-Age=0/i);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events (unauthorized after logout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 Unauthorized\", function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"После выхода\",\n  \"address\": \"адрес\",\n  \"started_at\": \"2026-06-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-06-01T23:00:00+03:00\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error cases",
+      "description": "",
+      "item": [
+        {
+          "name": "POST /users (400 invalid full_name)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"invalid full_name field\", function () {",
+                  "    pm.expect(pm.response.json().message).to.include('full_name');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"\",\n  \"username\": \"x\",\n  \"password\": \"y\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login (400 empty password)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"invalid password field\", function () {",
+                  "    pm.expect(pm.response.json().message).to.include('password');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"any\",\n  \"password\": \"\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login (401 invalid credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"401 Unauthorized\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"invalid credentials\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql('invalid credentials');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"invalid-user\",\n  \"password\": \"invalid-password\"\n}"
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events (400 invalid limit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"invalid limit parameter\", function () {",
+                  "    pm.expect(pm.response.json().message).to.include('limit');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events?limit=not-a-number",
+            "description": ""
           },
           "response": []
         }

@@ -233,3 +233,35 @@ func (s *EventStore) PatchByIDAndOrganizer(ctx context.Context, idHex, organizer
 	}
 	return res.MatchedCount > 0, nil
 }
+
+func (s *EventStore) ListByTitle(ctx context.Context, title string) ([]ListItem, error) {
+	cursor, err := s.coll.Find(ctx, bson.M{"title": title})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	out := make([]ListItem, 0)
+	for cursor.Next(ctx) {
+		var raw EventRecord
+		if err := cursor.Decode(&raw); err != nil {
+			return nil, err
+		}
+		out = append(out, ListItem{
+			ID:          raw.ID.Hex(),
+			Title:       raw.Title,
+			Category:    raw.Category,
+			Price:       raw.Price,
+			Description: raw.Description,
+			Location:    raw.Location,
+			CreatedAt:   raw.CreatedAt,
+			CreatedBy:   raw.CreatedBy,
+			StartedAt:   raw.StartedAt,
+			FinishedAt:  raw.FinishedAt,
+		})
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

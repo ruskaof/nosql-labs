@@ -5,23 +5,34 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
+var cassandraIdentifierPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,47}$`)
+
 type ApplicationConfig struct {
-	Port              int
-	Host              string
-	AppUserSessionTTL int
-	RedisHost         string
-	RedisPort         int
-	RedisPassword     string
-	RedisDB           int
-	MongoDatabase     string
-	MongoHost         string
-	MongoPort         int
-	MongoUser         string
-	MongoPassword     string
-	MongoAuthSource   string
+	Port                 int
+	Host                 string
+	AppUserSessionTTL    int
+	RedisHost            string
+	RedisPort            int
+	RedisPassword        string
+	RedisDB              int
+	MongoDatabase        string
+	MongoHost            string
+	MongoPort            int
+	MongoUser            string
+	MongoPassword        string
+	MongoAuthSource      string
+	AppLikeTTL           int
+	CassandraHosts       []string
+	CassandraPort        int
+	CassandraUsername    string
+	CassandraPassword    string
+	CassandraKeyspace    string
+	CassandraConsistency string
 }
 
 func InitConfig() (*ApplicationConfig, error) {
@@ -49,6 +60,17 @@ func InitConfig() (*ApplicationConfig, error) {
 	}
 	if appUserSessionTTL <= 0 {
 		return nil, errors.New("Env variable APP_USER_SESSION_TTL must be greater than 0")
+	}
+	appLikeTTL := 60
+	if s := os.Getenv("APP_LIKE_TTL"); s != "" {
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.New("Env variable APP_LIKE_TTL must be an integer")
+		}
+		if v <= 0 {
+			return nil, errors.New("Env variable APP_LIKE_TTL must be greater than 0")
+		}
+		appLikeTTL = v
 	}
 
 	redisHost := os.Getenv("REDIS_HOST")
@@ -93,20 +115,65 @@ func InitConfig() (*ApplicationConfig, error) {
 		mongoAuthSource = "admin"
 	}
 
+	cassandraHostsRaw, cassandraHostsPresent := os.LookupEnv("CASSANDRA_HOSTS")
+	if !cassandraHostsPresent || strings.TrimSpace(cassandraHostsRaw) == "" {
+		return nil, errors.New("Env variable CASSANDRA_HOSTS is not present")
+	}
+	cassandraHosts := make([]string, 0)
+	for _, host := range strings.Split(cassandraHostsRaw, ",") {
+		host = strings.TrimSpace(host)
+		if host != "" {
+			cassandraHosts = append(cassandraHosts, host)
+		}
+	}
+	if len(cassandraHosts) == 0 {
+		return nil, errors.New("Env variable CASSANDRA_HOSTS must contain at least one host")
+	}
+
+	cassandraPortStr, cassandraPortPresent := os.LookupEnv("CASSANDRA_PORT")
+	if !cassandraPortPresent {
+		return nil, errors.New("Env variable CASSANDRA_PORT is not present")
+	}
+	cassandraPort, err := strconv.Atoi(cassandraPortStr)
+	if err != nil {
+		return nil, errors.New("Env variable CASSANDRA_PORT must be an integer")
+	}
+	cassandraUsername := os.Getenv("CASSANDRA_USERNAME")
+	cassandraPassword := os.Getenv("CASSANDRA_PASSWORD")
+
+	cassandraKeyspace := os.Getenv("CASSANDRA_KEYSPACE")
+	if strings.TrimSpace(cassandraKeyspace) == "" {
+		return nil, errors.New("Env variable CASSANDRA_KEYSPACE is not present")
+	}
+	if !cassandraIdentifierPattern.MatchString(cassandraKeyspace) {
+		return nil, errors.New("Env variable CASSANDRA_KEYSPACE must match ^[A-Za-z][A-Za-z0-9_]{0,47}$")
+	}
+	cassandraConsistency := os.Getenv("CASSANDRA_CONSISTENCY")
+	if strings.TrimSpace(cassandraConsistency) == "" {
+		cassandraConsistency = "ONE"
+	}
+
 	return &ApplicationConfig{
-		Port:              appPort,
-		Host:              appHost,
-		AppUserSessionTTL: appUserSessionTTL,
-		RedisHost:         redisHost,
-		RedisPort:         redisPort,
-		RedisPassword:     redisPassword,
-		RedisDB:           redisDB,
-		MongoDatabase:     mongoDatabase,
-		MongoHost:         mongoHost,
-		MongoPort:         mongoPort,
-		MongoUser:         mongoUser,
-		MongoPassword:     mongoPassword,
-		MongoAuthSource:   mongoAuthSource,
+		Port:                 appPort,
+		Host:                 appHost,
+		AppUserSessionTTL:    appUserSessionTTL,
+		RedisHost:            redisHost,
+		RedisPort:            redisPort,
+		RedisPassword:        redisPassword,
+		RedisDB:              redisDB,
+		MongoDatabase:        mongoDatabase,
+		MongoHost:            mongoHost,
+		MongoPort:            mongoPort,
+		MongoUser:            mongoUser,
+		MongoPassword:        mongoPassword,
+		MongoAuthSource:      mongoAuthSource,
+		AppLikeTTL:           appLikeTTL,
+		CassandraHosts:       cassandraHosts,
+		CassandraPort:        cassandraPort,
+		CassandraUsername:    cassandraUsername,
+		CassandraPassword:    cassandraPassword,
+		CassandraKeyspace:    cassandraKeyspace,
+		CassandraConsistency: cassandraConsistency,
 	}, nil
 }
 

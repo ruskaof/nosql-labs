@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -229,6 +230,12 @@ func (h *HttpHandler) ListEvents(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if shouldIncludeReactions(r) {
+		if err := h.populateReactions(ctx, events); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
 
 	h.sessionHandler.WriteSessionCookie(w, r)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -253,6 +260,14 @@ func (h *HttpHandler) GetEventByID(w http.ResponseWriter, r *http.Request, id st
 	if e == nil {
 		writeJSONMessage(w, http.StatusNotFound, "Not found")
 		return
+	}
+	if shouldIncludeReactions(r) {
+		events := []event.ListItem{*e}
+		if err := h.populateReactions(r.Context(), events); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		e = &events[0]
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -353,4 +368,93 @@ func normalizeDateRange(dateFromRaw, dateToRaw string) (string, string, string) 
 		dateTo = t.Format("2006-01-02") + "T23:59:59+03:00"
 	}
 	return dateFrom, dateTo, ""
+}
+
+func shouldIncludeReactions(r *http.Request) bool {
+	include := r.URL.Query().Get("include")
+	for _, token := range strings.Split(include, ",") {
+		if strings.TrimSpace(token) == "reactions" {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *HttpHandler) populateReactions(ctx context.Context, events []event.ListItem) error {
+	titles := make([]string, 0, len(events))
+	for _, e := range events {
+		titles = append(titles, e.Title)
+	}
+	byTitle, err := h.reactionService.AggregateByTitles(ctx, titles)
+	if err != nil {
+		return err
+	}
+	for i := range events {
+		counts, ok := byTitle[events[i].Title]
+		if !ok {
+			events[i].Reactions = &event.Reactions{Likes: 0, Dislikes: 0}
+			continue
+		}
+		events[i].Reactions = &event.Reactions{
+			Likes:    counts.Likes,
+			Dislikes: counts.Dislikes,
+		}
+	}
+	return nil
+}
+
+func (h *HttpHandler) PutEventLike(w http.ResponseWriter, r *http.Request, id string) {
+	h.putEventReaction(w, r, id, true)
+}
+
+func (h *HttpHandler) PutEventDislike(w http.ResponseWriter, r *http.Request, id string) {
+	h.putEventReaction(w, r, id, false)
+}
+
+func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, id string, isLike bool) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	ctx := r.Context()
+	c, err := r.Cookie(sessionCookieName)
+	if err != nil || c.Value == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	userID, exists, err := h.sessionStore.GetUserID(ctx, c.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !exists || userID == "" {
+		expireSessionCookie(w)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	e, err := h.eventStore.FindByID(ctx, id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if e == nil {
+		h.sessionHandler.WriteSessionCookie(w, r)
+		writeJSONMessage(w, http.StatusNotFound, "Event not found")
+		return
+	}
+	if isLike {
+		err = h.reactionService.PutLike(ctx, id, userID)
+	} else {
+		err = h.reactionService.PutDislike(ctx, id, userID)
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := h.reactionService.InvalidateTitle(ctx, e.Title); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.sessionHandler.WriteSessionCookie(w, r)
+	w.WriteHeader(http.StatusNoContent)
 }

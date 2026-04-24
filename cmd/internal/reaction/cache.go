@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -24,26 +24,39 @@ func (c *Cache) key(title string) string {
 }
 
 func (c *Cache) Get(ctx context.Context, title string) (Counters, bool, error) {
-	raw, err := c.client.Get(ctx, c.key(title)).Result()
-	if err == redis.Nil {
-		return Counters{}, false, nil
-	}
+	values, err := c.client.HGetAll(ctx, c.key(title)).Result()
 	if err != nil {
 		return Counters{}, false, err
 	}
-	var counters Counters
-	if err := json.Unmarshal([]byte(raw), &counters); err != nil {
+	if len(values) == 0 {
+		return Counters{}, false, nil
+	}
+	likesRaw, okLikes := values["likes"]
+	dislikesRaw, okDislikes := values["dislikes"]
+	if !okLikes || !okDislikes {
+		return Counters{}, false, nil
+	}
+	likes, err := strconv.Atoi(likesRaw)
+	if err != nil {
 		return Counters{}, false, err
 	}
-	return counters, true, nil
+	dislikes, err := strconv.Atoi(dislikesRaw)
+	if err != nil {
+		return Counters{}, false, err
+	}
+	return Counters{Likes: likes, Dislikes: dislikes}, true, nil
 }
 
 func (c *Cache) Set(ctx context.Context, title string, counters Counters, ttl time.Duration) error {
-	payload, err := json.Marshal(counters)
-	if err != nil {
-		return err
-	}
-	return c.client.Set(ctx, c.key(title), payload, ttl).Err()
+	key := c.key(title)
+	pipe := c.client.TxPipeline()
+	pipe.HSet(ctx, key, map[string]interface{}{
+		"likes":    counters.Likes,
+		"dislikes": counters.Dislikes,
+	})
+	pipe.Expire(ctx, key, ttl)
+	_, err := pipe.Exec(ctx)
+	return err
 }
 
 func (c *Cache) Delete(ctx context.Context, title string) error {

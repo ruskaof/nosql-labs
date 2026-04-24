@@ -455,6 +455,10 @@ func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, i
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if _, err := h.reactionService.AggregateByTitles(ctx, []string{e.Title}); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	h.sessionHandler.WriteSessionCookie(w, r)
 	w.WriteHeader(http.StatusNoContent)
 }

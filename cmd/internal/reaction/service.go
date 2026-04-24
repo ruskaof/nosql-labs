@@ -81,3 +81,20 @@ func (s *Service) AggregateByTitles(ctx context.Context, titles []string) (map[s
 	}
 	return out, nil
 }
+
+func (s *Service) WarmEventCache(ctx context.Context, eventID string, title string) error {
+	perEvent, err := s.store.CountByEventIDs(ctx, []string{eventID})
+	if err != nil {
+		return err
+	}
+	counters := perEvent[eventID]
+	if counters.Likes == 0 && counters.Dislikes == 0 {
+		return nil
+	}
+	if strings.TrimSpace(title) != "" {
+		if err := s.cache.Set(ctx, title, counters, s.likeTTL); err != nil {
+			return err
+		}
+	}
+	return s.cache.Set(ctx, eventID, counters, s.likeTTL)
+}

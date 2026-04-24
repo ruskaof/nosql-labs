@@ -459,6 +459,10 @@ func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, i
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if err := h.reactionService.WarmEventCache(ctx, id, e.Title); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	h.sessionHandler.WriteSessionCookie(w, r)
 	w.WriteHeader(http.StatusNoContent)
 }

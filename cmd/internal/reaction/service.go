@@ -82,19 +82,32 @@ func (s *Service) AggregateByTitles(ctx context.Context, titles []string) (map[s
 	return out, nil
 }
 
-func (s *Service) WarmEventCache(ctx context.Context, eventID string, title string) error {
-	perEvent, err := s.store.CountByEventIDs(ctx, []string{eventID})
+func (s *Service) RefreshTitleCache(ctx context.Context, title string) (Counters, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return Counters{}, nil
+	}
+	eventsByTitle, err := s.eventStore.ListByTitle(ctx, title)
 	if err != nil {
-		return err
+		return Counters{}, err
 	}
-	counters := perEvent[eventID]
-	if counters.Likes == 0 && counters.Dislikes == 0 {
-		return nil
+	eventIDs := make([]string, 0, len(eventsByTitle))
+	for _, e := range eventsByTitle {
+		eventIDs = append(eventIDs, e.ID)
 	}
-	if strings.TrimSpace(title) != "" {
-		if err := s.cache.Set(ctx, title, counters, s.likeTTL); err != nil {
-			return err
+	perEvent, err := s.store.CountByEventIDs(ctx, eventIDs)
+	if err != nil {
+		return Counters{}, err
+	}
+	total := Counters{}
+	for _, c := range perEvent {
+		total.Likes += c.Likes
+		total.Dislikes += c.Dislikes
+	}
+	if total.Likes > 0 || total.Dislikes > 0 {
+		if err := s.cache.Set(ctx, title, total, s.likeTTL); err != nil {
+			return Counters{}, err
 		}
 	}
-	return s.cache.Set(ctx, eventID, counters, s.likeTTL)
+	return total, nil
 }

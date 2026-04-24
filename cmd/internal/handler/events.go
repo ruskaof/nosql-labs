@@ -455,11 +455,7 @@ func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, i
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if _, err := h.reactionService.AggregateByTitles(ctx, []string{e.Title}); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if err := h.reactionService.WarmEventCache(ctx, id, e.Title); err != nil {
+	if _, err := h.reactionService.RefreshTitleCache(ctx, e.Title); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

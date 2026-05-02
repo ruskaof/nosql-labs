@@ -443,19 +443,11 @@ func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 	if isLike {
-		err = h.reactionService.PutLike(ctx, id, userID)
+		err = h.reactionService.PutLike(ctx, id, userID, e.Title)
 	} else {
-		err = h.reactionService.PutDislike(ctx, id, userID)
+		err = h.reactionService.PutDislike(ctx, id, userID, e.Title)
 	}
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if err := h.reactionService.InvalidateTitle(ctx, e.Title); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if _, err := h.reactionService.RefreshTitleCache(ctx, e.Title); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

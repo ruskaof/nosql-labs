@@ -58,7 +58,6 @@ func (c *Cache) Set(ctx context.Context, title string, counters Counters, ttl ti
 	_, err := pipe.Exec(ctx)
 	return err
 }
-
 func (c *Cache) Delete(ctx context.Context, title string) error {
 	return c.client.Del(ctx, c.key(title)).Err()
 }

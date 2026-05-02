@@ -23,16 +23,20 @@ func NewService(store Store, cache *Cache, likeTTL time.Duration, eventStore Eve
 	return &Service{store: store, cache: cache, likeTTL: likeTTL, eventStore: eventStore}
 }
 
-func (s *Service) PutLike(ctx context.Context, eventID string, userID string) error {
-	return s.store.Upsert(ctx, eventID, userID, 1)
+func (s *Service) PutLike(ctx context.Context, eventID string, userID string, title string) error {
+	if err := s.store.Upsert(ctx, eventID, userID, 1); err != nil {
+		return err
+	}
+	_, err := s.refreshTitleCache(ctx, title)
+	return err
 }
 
-func (s *Service) PutDislike(ctx context.Context, eventID string, userID string) error {
-	return s.store.Upsert(ctx, eventID, userID, -1)
-}
-
-func (s *Service) InvalidateTitle(ctx context.Context, title string) error {
-	return s.cache.Delete(ctx, title)
+func (s *Service) PutDislike(ctx context.Context, eventID string, userID string, title string) error {
+	if err := s.store.Upsert(ctx, eventID, userID, -1); err != nil {
+		return err
+	}
+	_, err := s.refreshTitleCache(ctx, title)
+	return err
 }
 
 func (s *Service) AggregateByTitles(ctx context.Context, titles []string) (map[string]Counters, error) {
@@ -73,16 +77,14 @@ func (s *Service) AggregateByTitles(ctx context.Context, titles []string) (map[s
 			total.Dislikes += c.Dislikes
 		}
 		out[title] = total
-		if total.Likes > 0 || total.Dislikes > 0 {
-			if err := s.cache.Set(ctx, title, total, s.likeTTL); err != nil {
-				return nil, err
-			}
+		if err := s.cache.Set(ctx, title, total, s.likeTTL); err != nil {
+			return nil, err
 		}
 	}
 	return out, nil
 }
 
-func (s *Service) RefreshTitleCache(ctx context.Context, title string) (Counters, error) {
+func (s *Service) refreshTitleCache(ctx context.Context, title string) (Counters, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return Counters{}, nil
@@ -104,10 +106,8 @@ func (s *Service) RefreshTitleCache(ctx context.Context, title string) (Counters
 		total.Likes += c.Likes
 		total.Dislikes += c.Dislikes
 	}
-	if total.Likes > 0 || total.Dislikes > 0 {
-		if err := s.cache.Set(ctx, title, total, s.likeTTL); err != nil {
-			return Counters{}, err
-		}
+	if err := s.cache.Set(ctx, title, total, s.likeTTL); err != nil {
+		return Counters{}, err
 	}
 	return total, nil
 }

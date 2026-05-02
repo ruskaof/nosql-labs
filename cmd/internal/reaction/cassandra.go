@@ -23,7 +23,15 @@ func (s *CassandraStore) InitSchema(ctx context.Context) error {
 		created_at timestamp,
 		PRIMARY KEY ((event_id), created_by)
 	)`
-	return s.session.Query(createTable).WithContext(ctx).Exec()
+	if err := s.session.Query(createTable).WithContext(ctx).Exec(); err != nil {
+		return err
+	}
+	createLikeValueIndex := `CREATE INDEX IF NOT EXISTS event_reactions_like_value_idx ON event_reactions (like_value)`
+	if err := s.session.Query(createLikeValueIndex).WithContext(ctx).Exec(); err != nil {
+		return err
+	}
+	createCreatedByIndex := `CREATE INDEX IF NOT EXISTS event_reactions_created_by_idx ON event_reactions (created_by)`
+	return s.session.Query(createCreatedByIndex).WithContext(ctx).Exec()
 }
 
 func (s *CassandraStore) Upsert(ctx context.Context, eventID string, userID string, likeValue int8) error {

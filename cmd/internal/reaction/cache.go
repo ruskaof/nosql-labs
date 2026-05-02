@@ -20,7 +20,7 @@ func NewCache(client *redis.Client) *Cache {
 
 func (c *Cache) key(title string) string {
 	sum := md5.Sum([]byte(title))
-	return "events:" + hex.EncodeToString(sum[:]) + ":reactions"
+	return "event:" + hex.EncodeToString(sum[:]) + ":reactions"
 }
 
 func (c *Cache) Get(ctx context.Context, title string) (Counters, bool, error) {

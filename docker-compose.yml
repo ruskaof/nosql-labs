@@ -12,6 +12,8 @@ services:
         condition: service_healthy
       mongo-init:
         condition: service_completed_successfully
+      cassandra:
+        condition: service_healthy
     networks:
       - main-network
 
@@ -208,6 +210,19 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+
+  cassandra:
+    image: cassandra:5.0
+    ports:
+      - "${CASSANDRA_PORT:-9042}:9042"
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh 127.0.0.1 9042 -e 'DESCRIBE KEYSPACES'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
 
 networks:
   main-network:

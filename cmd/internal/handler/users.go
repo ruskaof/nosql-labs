@@ -279,6 +279,12 @@ func (h *HttpHandler) ListEventsByUserID(w http.ResponseWriter, r *http.Request,
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if shouldIncludeReactions(r) {
+		if err := h.populateReactions(r.Context(), events); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{

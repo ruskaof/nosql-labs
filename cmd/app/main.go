@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"nosql-labs/cmd/internal/config"
@@ -54,30 +53,13 @@ func main() {
 
 	userStore := user.NewStore(database)
 	eventStore := event.NewStore(database)
-	cassandraSession, err := newCassandraSession(cfg, false)
+	cassandraSession, err := newCassandraSession(cfg)
 	if err != nil {
 		log.Fatalf("Cassandra connect: %v", err)
 	}
-	if err := cassandraSession.Query(
-		fmt.Sprintf(
-			"CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}",
-			cfg.CassandraKeyspace,
-		),
-	).WithContext(ctx).Exec(); err != nil {
-		log.Fatalf("Cassandra keyspace init: %v", err)
-	}
-	cassandraSession.Close()
-
-	cassandraSession, err = newCassandraSession(cfg, true)
-	if err != nil {
-		log.Fatalf("Cassandra connect with keyspace: %v", err)
-	}
 	defer cassandraSession.Close()
 
-	reactionStore := reaction.NewCassandraStore(cassandraSession, cfg.CassandraKeyspace)
-	if err := reactionStore.InitSchema(ctx); err != nil {
-		log.Fatalf("Cassandra schema init: %v", err)
-	}
+	reactionStore := reaction.NewCassandraStore(cassandraSession)
 	reactionCache := reaction.NewCache(rdb)
 	reactionService := reaction.NewService(
 		reactionStore,
@@ -162,7 +144,7 @@ func main() {
 	}
 }
 
-func newCassandraSession(cfg *config.ApplicationConfig, withKeyspace bool) (*gocql.Session, error) {
+func newCassandraSession(cfg *config.ApplicationConfig) (*gocql.Session, error) {
 	cluster := gocql.NewCluster(cfg.CassandraHosts...)
 	cluster.Port = cfg.CassandraPort
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -187,8 +169,6 @@ func newCassandraSession(cfg *config.ApplicationConfig, withKeyspace bool) (*goc
 		consistency = gocql.LocalQuorum
 	}
 	cluster.Consistency = consistency
-	if withKeyspace {
-		cluster.Keyspace = cfg.CassandraKeyspace
-	}
+	cluster.Keyspace = cfg.CassandraKeyspace
 	return cluster.CreateSession()
 }

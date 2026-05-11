@@ -11,27 +11,8 @@ type CassandraStore struct {
 	session *gocql.Session
 }
 
-func NewCassandraStore(session *gocql.Session, _ string) *CassandraStore {
+func NewCassandraStore(session *gocql.Session) *CassandraStore {
 	return &CassandraStore{session: session}
-}
-
-func (s *CassandraStore) InitSchema(ctx context.Context) error {
-	createTable := `CREATE TABLE IF NOT EXISTS event_reactions (
-		event_id text,
-		created_by text,
-		like_value tinyint,
-		created_at timestamp,
-		PRIMARY KEY ((event_id), created_by)
-	)`
-	if err := s.session.Query(createTable).WithContext(ctx).Exec(); err != nil {
-		return err
-	}
-	createLikeValueIndex := `CREATE INDEX IF NOT EXISTS event_reactions_like_value_idx ON event_reactions (like_value)`
-	if err := s.session.Query(createLikeValueIndex).WithContext(ctx).Exec(); err != nil {
-		return err
-	}
-	createCreatedByIndex := `CREATE INDEX IF NOT EXISTS event_reactions_created_by_idx ON event_reactions (created_by)`
-	return s.session.Query(createCreatedByIndex).WithContext(ctx).Exec()
 }
 
 func (s *CassandraStore) Upsert(ctx context.Context, eventID string, userID string, likeValue int8) error {

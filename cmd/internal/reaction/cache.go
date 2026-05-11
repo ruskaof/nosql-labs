@@ -33,7 +33,7 @@ func (c *Cache) Get(ctx context.Context, title string) (Counters, bool, error) {
 	}
 	likesRaw, okLikes := values["likes"]
 	dislikesRaw, okDislikes := values["dislikes"]
-	if !okLikes || !okDislikes {
+	if !okLikes && !okDislikes {
 		return Counters{}, false, nil
 	}
 	likes, err := strconv.Atoi(likesRaw)

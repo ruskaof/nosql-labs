@@ -10,5 +10,4 @@ type Counters struct {
 type Store interface {
 	Upsert(ctx context.Context, eventID string, userID string, likeValue int8) error
 	CountByEventIDs(ctx context.Context, eventIDs []string) (map[string]Counters, error)
-	InitSchema(ctx context.Context) error
 }

@@ -33,3 +33,14 @@ run_cql "CREATE TABLE IF NOT EXISTS ${KEYSPACE}.event_reactions (
 
 run_cql "CREATE INDEX IF NOT EXISTS event_reactions_like_value_idx ON ${KEYSPACE}.event_reactions (like_value);"
 run_cql "CREATE INDEX IF NOT EXISTS event_reactions_created_by_idx ON ${KEYSPACE}.event_reactions (created_by);"
+
+run_cql "CREATE TABLE IF NOT EXISTS ${KEYSPACE}.event_reviews (
+  event_id text,
+  created_by text,
+  id uuid,
+  rating tinyint,
+  comment text,
+  created_at timestamp,
+  updated_at timestamp,
+  PRIMARY KEY ((event_id), created_by)
+);"

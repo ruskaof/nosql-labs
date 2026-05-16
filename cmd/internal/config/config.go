@@ -27,6 +27,7 @@ type ApplicationConfig struct {
 	MongoPassword        string
 	MongoAuthSource      string
 	AppLikeTTL           int
+	AppEventReviewsTTL   int
 	CassandraHosts       []string
 	CassandraPort        int
 	CassandraUsername    string
@@ -71,6 +72,17 @@ func InitConfig() (*ApplicationConfig, error) {
 			return nil, errors.New("Env variable APP_LIKE_TTL must be greater than 0")
 		}
 		appLikeTTL = v
+	}
+	appEventReviewsTTL := 120
+	if s := os.Getenv("APP_EVENT_REVIEWS_TTL"); s != "" {
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.New("Env variable APP_EVENT_REVIEWS_TTL must be an integer")
+		}
+		if v <= 0 {
+			return nil, errors.New("Env variable APP_EVENT_REVIEWS_TTL must be greater than 0")
+		}
+		appEventReviewsTTL = v
 	}
 
 	redisHost := os.Getenv("REDIS_HOST")
@@ -168,6 +180,7 @@ func InitConfig() (*ApplicationConfig, error) {
 		MongoPassword:        mongoPassword,
 		MongoAuthSource:      mongoAuthSource,
 		AppLikeTTL:           appLikeTTL,
+		AppEventReviewsTTL:   appEventReviewsTTL,
 		CassandraHosts:       cassandraHosts,
 		CassandraPort:        cassandraPort,
 		CassandraUsername:    cassandraUsername,

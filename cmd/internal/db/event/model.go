@@ -19,11 +19,17 @@ type ListItem struct {
 	StartedAt   string      `json:"started_at"`
 	FinishedAt  string      `json:"finished_at"`
 	Reactions   *Reactions  `json:"reactions,omitempty"`
+	Reviews     *Reviews    `json:"reviews,omitempty"`
 }
 
 type Reactions struct {
 	Likes    int `json:"likes"`
 	Dislikes int `json:"dislikes"`
+}
+
+type Reviews struct {
+	Count  int     `json:"count"`
+	Rating float64 `json:"rating"`
 }
 
 type EventRecord struct {

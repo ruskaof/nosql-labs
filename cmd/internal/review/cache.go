@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -24,24 +24,37 @@ func (c *Cache) key(title string) string {
 }
 
 func (c *Cache) Get(ctx context.Context, title string) (Aggregates, bool, error) {
-	val, err := c.client.Get(ctx, c.key(title)).Result()
-	if err == redis.Nil {
-		return Aggregates{}, false, nil
-	}
+	values, err := c.client.HGetAll(ctx, c.key(title)).Result()
 	if err != nil {
 		return Aggregates{}, false, err
 	}
-	var agg Aggregates
-	if err := json.Unmarshal([]byte(val), &agg); err != nil {
+	if len(values) == 0 {
+		return Aggregates{}, false, nil
+	}
+	countRaw, okCount := values["count"]
+	ratingRaw, okRating := values["rating"]
+	if !okCount && !okRating {
+		return Aggregates{}, false, nil
+	}
+	count, err := strconv.Atoi(countRaw)
+	if err != nil {
 		return Aggregates{}, false, err
 	}
-	return agg, true, nil
+	rating, err := strconv.ParseFloat(ratingRaw, 64)
+	if err != nil {
+		return Aggregates{}, false, err
+	}
+	return Aggregates{Count: count, Rating: rating}, true, nil
 }
 
 func (c *Cache) Set(ctx context.Context, title string, agg Aggregates, ttl time.Duration) error {
-	data, err := json.Marshal(agg)
-	if err != nil {
-		return err
-	}
-	return c.client.Set(ctx, c.key(title), data, ttl).Err()
+	key := c.key(title)
+	pipe := c.client.TxPipeline()
+	pipe.HSet(ctx, key, map[string]interface{}{
+		"count":  agg.Count,
+		"rating": strconv.FormatFloat(agg.Rating, 'f', 1, 64),
+	})
+	pipe.Expire(ctx, key, ttl)
+	_, err := pipe.Exec(ctx)
+	return err
 }

@@ -578,7 +578,6 @@ func (h *HttpHandler) ListEventReviews(w http.ResponseWriter, r *http.Request, e
 		return
 	}
 
-	// Apply offset/limit in memory (Cassandra has no OFFSET)
 	if offset >= len(all) {
 		h.sessionHandler.WriteSessionCookie(w, r)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")

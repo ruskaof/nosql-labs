@@ -6,23 +6,32 @@ import (
 	"nosql-labs/cmd/internal/db/event"
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/db/user"
+	"nosql-labs/cmd/internal/reaction"
 )
 
 type HttpHandler struct {
-	cfg            *config.ApplicationConfig
-	sessionHandler *SessionHandler
-	sessionStore   session.SessionStore
-	userStore      *user.UserStore
-	eventStore     *event.EventStore
+	cfg             *config.ApplicationConfig
+	sessionHandler  *SessionHandler
+	sessionStore    session.SessionStore
+	userStore       *user.UserStore
+	eventStore      *event.EventStore
+	reactionService *reaction.Service
 }
 
-func NewHttpHandler(cfg *config.ApplicationConfig, sessionStore session.SessionStore, userStore *user.UserStore, eventStore *event.EventStore) *HttpHandler {
+func NewHttpHandler(
+	cfg *config.ApplicationConfig,
+	sessionStore session.SessionStore,
+	userStore *user.UserStore,
+	eventStore *event.EventStore,
+	reactionService *reaction.Service,
+) *HttpHandler {
 	return &HttpHandler{
-		cfg:            cfg,
-		sessionHandler: NewSessionHandler(cfg, sessionStore),
-		sessionStore:   sessionStore,
-		userStore:      userStore,
-		eventStore:     eventStore,
+		cfg:             cfg,
+		sessionHandler:  NewSessionHandler(cfg, sessionStore),
+		sessionStore:    sessionStore,
+		userStore:       userStore,
+		eventStore:      eventStore,
+		reactionService: reactionService,
 	}
 }
 

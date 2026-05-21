@@ -42,27 +42,25 @@ func (h *HttpHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	userHex := rec.ID.Hex()
 	c, err := r.Cookie(sessionCookieName)
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if c == nil || c.Value == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	exists, err := h.sessionStore.Exists(ctx, c.Value)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if exists {
-		if err := h.sessionStore.SetUserID(ctx, c.Value, userHex, ttl); err != nil {
+	if c != nil && c.Value != "" {
+		exists, err := h.sessionStore.Exists(ctx, c.Value)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		h.sessionHandler.SetSessionID(w, c.Value)
-		w.WriteHeader(http.StatusNoContent)
-		return
+		if exists {
+			if err := h.sessionStore.SetUserID(ctx, c.Value, userHex, ttl); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			h.sessionHandler.SetSessionID(w, c.Value)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 	}
 
 	sid, err := session.GenerateID()

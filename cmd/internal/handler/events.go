@@ -87,6 +87,11 @@ func (h *HttpHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.graphStore.EnsureEvent(ctx, id.Hex(), *body.Title); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(map[string]string{"id": id.Hex()}); err != nil {
@@ -718,6 +723,9 @@ func (h *HttpHandler) putEventReaction(w http.ResponseWriter, r *http.Request, i
 	}
 	if isLike {
 		err = h.reactionService.PutLike(ctx, id, userID, e.Title)
+		if err == nil {
+			err = h.graphStore.AddLike(ctx, userID, id)
+		}
 	} else {
 		err = h.reactionService.PutDislike(ctx, id, userID, e.Title)
 	}

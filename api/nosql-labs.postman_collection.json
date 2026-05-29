@@ -7,30 +7,16 @@
     "description": ""
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080"
-    },
-    {
-      "key": "username",
-      "value": ""
-    },
-    {
-      "key": "password",
-      "value": "test-password"
-    },
-    {
-      "key": "eventTitle",
-      "value": ""
-    },
-    {
-      "key": "eventId",
-      "value": ""
-    },
-    {
-      "key": "userId",
-      "value": ""
-    }
+    { "key": "baseUrl",    "value": "http://localhost:8080" },
+    { "key": "username",   "value": "" },
+    { "key": "password",   "value": "test-password" },
+    { "key": "username2",  "value": "" },
+    { "key": "eventTitle", "value": "" },
+    { "key": "eventId",    "value": "" },
+    { "key": "event2Title","value": "" },
+    { "key": "event2Id",   "value": "" },
+    { "key": "userId",     "value": "" },
+    { "key": "reviewId",   "value": "" }
   ],
   "item": [
     {
@@ -43,12 +29,12 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Body is JSON with status ok\", function () {",
+                  "pm.test('Body is JSON with status ok', function () {",
                   "    const body = pm.response.json();",
-                  "    pm.expect(body).to.have.property(\"status\", \"ok\");",
+                  "    pm.expect(body).to.have.property('status', 'ok');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -58,8 +44,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/health",
-            "description": ""
+            "url": "{{baseUrl}}/health"
           },
           "response": []
         },
@@ -70,10 +55,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Set-Cookie echoes session when cookie was sent\", function () {",
+                  "pm.test('Set-Cookie echoes session when cookie was sent', function () {",
                   "    const hasSetCookie = pm.response.headers.get('Set-Cookie');",
                   "    if (hasSetCookie) {",
                   "        pm.expect(hasSetCookie.toLowerCase()).to.include('x-session-id');",
@@ -87,8 +72,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/health",
-            "description": ""
+            "url": "{{baseUrl}}/health"
           },
           "response": []
         }
@@ -104,13 +88,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 201\", function () {",
+                  "pm.test('Status code is 201', function () {",
                   "    pm.response.to.have.status(201);",
                   "});",
-                  "pm.test(\"Body is empty\", function () {",
+                  "pm.test('Body is empty', function () {",
                   "    pm.expect(pm.response.text()).to.be.empty;",
                   "});",
-                  "pm.test(\"Set-Cookie sets X-Session-Id\", function () {",
+                  "pm.test('Set-Cookie sets X-Session-Id', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});"
@@ -123,11 +107,7 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/session",
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "description": ""
+            "body": { "mode": "raw", "raw": "" }
           },
           "response": []
         },
@@ -138,13 +118,13 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test('Status code is 200', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Body is empty\", function () {",
+                  "pm.test('Body is empty', function () {",
                   "    pm.expect(pm.response.text()).to.be.empty;",
                   "});",
-                  "pm.test(\"Set-Cookie refreshes session\", function () {",
+                  "pm.test('Set-Cookie refreshes session', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});"
@@ -157,11 +137,7 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/session",
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "description": ""
+            "body": { "mode": "raw", "raw": "" }
           },
           "response": []
         }
@@ -169,7 +145,7 @@
     },
     {
       "name": "Workflow (end-to-end)",
-      "description": "",
+      "description": "Full happy-path run. Run requests in order.",
       "item": [
         {
           "name": "Create anonymous session",
@@ -187,12 +163,12 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
-                  "pm.test(\"Set-Cookie: X-Session-Id\", function () {",
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Set-Cookie: X-Session-Id', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});",
-                  "pm.test(\"Empty body\", function () { pm.expect(pm.response.text()).to.be.empty; });"
+                  "pm.test('Empty body', function () { pm.expect(pm.response.text()).to.be.empty; });"
                 ],
                 "type": "text/javascript"
               }
@@ -202,24 +178,20 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/session",
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "description": ""
+            "body": { "mode": "raw", "raw": "" }
           },
           "response": []
         },
         {
-          "name": "POST /users (register)",
+          "name": "POST /users (register user1)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
-                  "pm.test(\"Empty body\", function () { pm.expect(pm.response.text()).to.be.empty; });",
-                  "pm.test(\"Set-Cookie: new X-Session-Id (logged-in session)\", function () {",
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Empty body', function () { pm.expect(pm.response.text()).to.be.empty; });",
+                  "pm.test('Set-Cookie: new X-Session-Id (logged-in session)', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "    pm.expect(sc.toLowerCase()).to.include('httponly');",
@@ -232,31 +204,25 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/users",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"full_name\": \"Джон Доу\",\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         },
         {
-          "name": "POST /auth/login",
+          "name": "POST /auth/login (user1)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
-                  "pm.test(\"No JSON body\", function () { pm.expect(pm.response.text()).to.be.empty; });",
-                  "pm.test(\"Set-Cookie refreshes session\", function () {",
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('No JSON body', function () { pm.expect(pm.response.text()).to.be.empty; });",
+                  "pm.test('Set-Cookie refreshes session', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "});"
@@ -267,23 +233,17 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         },
         {
-          "name": "POST /events (create)",
+          "name": "POST /events (create event1)",
           "event": [
             {
               "listen": "prerequest",
@@ -298,14 +258,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"201 Created\", function () { pm.response.to.have.status(201); });",
-                  "pm.test(\"JSON has id (hex)\", function () {",
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('JSON has id (hex)', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.property('id');",
                   "    pm.expect(j.id).to.match(/^[a-f0-9]{24}$/);",
                   "    pm.collectionVariables.set('eventId', j.id);",
                   "});",
-                  "pm.test(\"Content-Type JSON\", function () {",
+                  "pm.test('Content-Type JSON', function () {",
                   "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
                   "});"
                 ],
@@ -315,18 +275,51 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/events",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"{{eventTitle}}\",\n  \"address\": \"г. Санкт-Петербург, ул. Пушкина, дом Колотушкина\",\n  \"started_at\": \"2026-04-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-04-01T23:00:00+03:00\",\n  \"description\": \"Приглашаю вас отпраздновать мое 30-с-чем-то-летие\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events (create event2 — for recommendations)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('event2Title', 'Второе событие ' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
             },
-            "description": ""
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('JSON has id (hex)', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('id');",
+                  "    pm.expect(j.id).to.match(/^[a-f0-9]{24}$/);",
+                  "    pm.collectionVariables.set('event2Id', j.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{event2Title}}\",\n  \"address\": \"г. Москва, ул. Арбат, 1\",\n  \"started_at\": \"2026-06-01T14:00:00+03:00\",\n  \"finished_at\": \"2026-06-01T20:00:00+03:00\",\n  \"description\": \"Второе событие для теста рекомендаций\"\n}"
+            }
           },
           "response": []
         },
@@ -337,8 +330,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"409 Conflict\", function () { pm.response.to.have.status(409); });",
-                  "pm.test(\"message: event already exists\", function () {",
+                  "pm.test('409 Conflict', function () { pm.response.to.have.status(409); });",
+                  "pm.test('message: event already exists', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j.message).to.eql('event already exists');",
                   "});"
@@ -349,18 +342,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/events",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"{{eventTitle}}\",\n  \"address\": \"другой адрес\",\n  \"started_at\": \"2026-05-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-05-01T23:00:00+03:00\",\n  \"description\": \"duplicate\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         },
@@ -371,14 +358,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"Shape: events + count\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Shape: events + count', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.keys('events', 'count');",
                   "    pm.expect(j.events).to.be.an('array');",
                   "    pm.expect(j.count).to.eql(j.events.length);",
                   "});",
-                  "pm.test(\"Event entry shape (snake_case)\", function () {",
+                  "pm.test('Event entry shape (snake_case)', function () {",
                   "    const j = pm.response.json();",
                   "    if (j.events.length === 0) return;",
                   "    const e = j.events[0];",
@@ -393,8 +380,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events",
-            "description": ""
+            "url": "{{baseUrl}}/events"
           },
           "response": []
         },
@@ -405,8 +391,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"count matches events length\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('count matches events length', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j.count).to.eql(j.events.length);",
                   "});"
@@ -418,8 +404,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events?title={{eventTitle}}&limit=10&offset=0",
-            "description": ""
+            "url": "{{baseUrl}}/events?title={{eventTitle}}&limit=10&offset=0"
           },
           "response": []
         },
@@ -430,8 +415,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
-                  "pm.test(\"No body\", function () { pm.expect(pm.response.text()).to.be.empty; });"
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('No body', function () { pm.expect(pm.response.text()).to.be.empty; });"
                 ],
                 "type": "text/javascript"
               }
@@ -439,18 +424,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/events/{{eventId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"category\": \"party\",\n  \"price\": 0,\n  \"city\": \"Москва\"\n}"
-            },
-            "description": "task4"
+            }
           },
           "response": []
         },
@@ -461,8 +440,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"Event by id\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Event by id', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j.id).to.eql(pm.collectionVariables.get('eventId'));",
                   "    pm.expect(j).to.have.property('category', 'party');",
@@ -476,20 +455,19 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events/{{eventId}}",
-            "description": "task4"
+            "url": "{{baseUrl}}/events/{{eventId}}"
           },
           "response": []
         },
         {
-          "name": "GET /events (task4 filters)",
+          "name": "GET /events (filters: category, city, price, date)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"Filtered list\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Filtered list', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.keys('events', 'count');",
                   "    pm.expect(j.count).to.eql(j.events.length);",
@@ -502,8 +480,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events?id={{eventId}}&category=party&city=Москва&price_to=0&date_from=20260314",
-            "description": "task4"
+            "url": "{{baseUrl}}/events?id={{eventId}}&category=party&city=Москва&price_to=0&date_from=20260314"
           },
           "response": []
         },
@@ -514,8 +491,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"Users list\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Users list', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.keys('users', 'count');",
                   "    pm.expect(j.count).to.eql(j.users.length);",
@@ -531,8 +508,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/users?name=Джон&limit=10&offset=0",
-            "description": "task4"
+            "url": "{{baseUrl}}/users?name=Джон&limit=10&offset=0"
           },
           "response": []
         },
@@ -543,8 +519,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"User by id\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('User by id', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j.id).to.eql(pm.collectionVariables.get('userId'));",
                   "    pm.expect(j.username).to.eql(pm.collectionVariables.get('username'));",
@@ -557,8 +533,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/users/{{userId}}",
-            "description": "task4"
+            "url": "{{baseUrl}}/users/{{userId}}"
           },
           "response": []
         },
@@ -569,8 +544,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"User events\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('User events', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.keys('events', 'count');",
                   "    pm.expect(j.count).to.eql(j.events.length);",
@@ -583,19 +558,18 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/users/{{userId}}/events",
-            "description": "task4"
+            "url": "{{baseUrl}}/users/{{userId}}/events"
           },
           "response": []
         },
         {
-          "name": "POST /events/{id}/like",
+          "name": "POST /events/{id}/like (user1 likes event1)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });"
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
                 ],
                 "type": "text/javascript"
               }
@@ -605,11 +579,153 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/events/{{eventId}}/like",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{id}/reviews (create review)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+                  "pm.test('JSON has id', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('id');",
+                  "    pm.collectionVariables.set('reviewId', j.id);",
+                  "});",
+                  "pm.test('Content-Type JSON', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews",
             "body": {
               "mode": "raw",
-              "raw": ""
-            },
-            "description": "like event"
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Отличное мероприятие, очень понравилось!\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{id}/reviews (duplicate → 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('409 Conflict', function () { pm.response.to.have.status(409); });",
+                  "pm.test('message: Already exists', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.message).to.eql('Already exists');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 1,\n  \"comment\": \"Попытка дублирования\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events/{id}/reviews",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Shape: reviews + count', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('reviews');",
+                  "    pm.expect(j).to.have.property('count');",
+                  "    pm.expect(j.reviews).to.be.an('array');",
+                  "    pm.expect(j.count).to.eql(j.reviews.length);",
+                  "});",
+                  "pm.test('Review entry has expected fields', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.count).to.be.greaterThan(0);",
+                  "    const r = j.reviews[0];",
+                  "    ['id','rating','comment','created_by','created_at'].forEach(k => pm.expect(r).to.have.property(k));",
+                  "    pm.expect(r.rating).to.eql(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /events/{id}/reviews/{reviewId}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('No body', function () { pm.expect(pm.response.text()).to.be.empty; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews/{{reviewId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Пересмотрел мнение — всё равно хорошо\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events/{id}?include=reviews (updated rating)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('has reviews object', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('reviews');",
+                  "    pm.expect(j.reviews).to.have.property('count');",
+                  "    pm.expect(j.reviews).to.have.property('rating');",
+                  "    pm.expect(j.reviews.count).to.be.greaterThan(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events/{{eventId}}?include=reviews"
           },
           "response": []
         },
@@ -620,14 +736,15 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"has reactions\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('has reactions', function () {",
                   "    const j = pm.response.json();",
                   "    const e = (j.events || []).find(x => x.id === pm.collectionVariables.get('eventId'));",
                   "    pm.expect(e).to.exist;",
                   "    pm.expect(e).to.have.property('reactions');",
                   "    pm.expect(e.reactions).to.have.property('likes');",
                   "    pm.expect(e.reactions).to.have.property('dislikes');",
+                  "    pm.expect(e.reactions.likes).to.be.greaterThan(0);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -637,8 +754,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events?include=reactions&title={{eventTitle}}",
-            "description": "list with reactions"
+            "url": "{{baseUrl}}/events?include=reactions&title={{eventTitle}}"
           },
           "response": []
         },
@@ -649,8 +765,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"has reactions object\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('has reactions object', function () {",
                   "    const j = pm.response.json();",
                   "    pm.expect(j).to.have.property('reactions');",
                   "    pm.expect(j.reactions).to.have.property('likes');",
@@ -664,19 +780,18 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events/{{eventId}}?include=reactions",
-            "description": "event with reactions"
+            "url": "{{baseUrl}}/events/{{eventId}}?include=reactions"
           },
           "response": []
         },
         {
-          "name": "POST /events/{id}/dislike",
+          "name": "POST /events/{id}/dislike (user1 dislikes event1)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });"
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
                 ],
                 "type": "text/javascript"
               }
@@ -686,11 +801,7 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/events/{{eventId}}/dislike",
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "description": "switch to dislike"
+            "body": { "mode": "raw", "raw": "" }
           },
           "response": []
         },
@@ -701,8 +812,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"200 OK\", function () { pm.response.to.have.status(200); });",
-                  "pm.test(\"has reactions\", function () {",
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('has reactions', function () {",
                   "    const j = pm.response.json();",
                   "    const e = (j.events || []).find(x => x.id === pm.collectionVariables.get('eventId'));",
                   "    pm.expect(e).to.exist;",
@@ -716,20 +827,19 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/users/{{userId}}/events?include=reactions",
-            "description": "user events with reactions"
+            "url": "{{baseUrl}}/users/{{userId}}/events?include=reactions"
           },
           "response": []
         },
         {
-          "name": "POST /auth/logout",
+          "name": "POST /auth/logout (user1)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"204 No Content\", function () { pm.response.to.have.status(204); });",
-                  "pm.test(\"Set-Cookie expires session (Max-Age=0)\", function () {",
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });",
+                  "pm.test('Set-Cookie expires session (Max-Age=0)', function () {",
                   "    const sc = pm.response.headers.get('Set-Cookie') || '';",
                   "    pm.expect(sc.toLowerCase()).to.include('x-session-id');",
                   "    pm.expect(sc).to.match(/Max-Age=0/i);",
@@ -743,22 +853,27 @@
             "method": "POST",
             "header": [],
             "url": "{{baseUrl}}/auth/logout",
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "description": ""
+            "body": { "mode": "raw", "raw": "" }
           },
           "response": []
         },
         {
-          "name": "POST /events (unauthorized after logout)",
+          "name": "POST /session (anon session for user2)",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('username2', 'user2_' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"401 Unauthorized\", function () { pm.response.to.have.status(401); });"
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });"
                 ],
                 "type": "text/javascript"
               }
@@ -766,18 +881,236 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+            "header": [],
+            "url": "{{baseUrl}}/session",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /users (register user2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 Created', function () { pm.response.to.have.status(201); });"
+                ],
+                "type": "text/javascript"
               }
-            ],
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Второй Пользователь\",\n  \"username\": \"{{username2}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{eventId}/like (user2 likes event1 — establishes link)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/events/{{eventId}}/like",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{event2Id}/like (user2 likes event2 — seed recommendation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/events/{{event2Id}}/like",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/logout (user2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/login (user1 re-login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /recommendations (user1 → event2 recommended)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Shape: events array', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('events');",
+                  "    pm.expect(j.events).to.be.an('array');",
+                  "});",
+                  "pm.test('event2 is in recommendations', function () {",
+                  "    const j = pm.response.json();",
+                  "    const event2Id = pm.collectionVariables.get('event2Id');",
+                  "    const found = j.events.find(e => e.id === event2Id);",
+                  "    pm.expect(found).to.exist;",
+                  "});",
+                  "pm.test('event1 not in recommendations (already liked)', function () {",
+                  "    const j = pm.response.json();",
+                  "    const event1Id = pm.collectionVariables.get('eventId');",
+                  "    const found = j.events.find(e => e.id === event1Id);",
+                  "    pm.expect(found).to.not.exist;",
+                  "});",
+                  "pm.test('Recommendation event has correct shape', function () {",
+                  "    const j = pm.response.json();",
+                  "    if (j.events.length === 0) return;",
+                  "    const e = j.events[0];",
+                  "    ['id','title','location','created_at','created_by','started_at','finished_at'].forEach(k => pm.expect(e).to.have.property(k));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/recommendations"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /recommendations (cache hit — second call)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Same result from cache', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('events');",
+                  "    pm.expect(j.events).to.be.an('array');",
+                  "    const event2Id = pm.collectionVariables.get('event2Id');",
+                  "    const found = j.events.find(e => e.id === event2Id);",
+                  "    pm.expect(found).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/recommendations"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/logout (final)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events (401 unauthorized after logout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401 Unauthorized', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/events",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"После выхода\",\n  \"address\": \"адрес\",\n  \"started_at\": \"2026-06-01T12:00:00+03:00\",\n  \"finished_at\": \"2026-06-01T23:00:00+03:00\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         }
@@ -785,17 +1118,17 @@
     },
     {
       "name": "Error cases",
-      "description": "",
+      "description": "Isolated error-path checks. Do NOT depend on workflow state.",
       "item": [
         {
-          "name": "POST /users (400 invalid full_name)",
+          "name": "POST /users (400 missing full_name)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
-                  "pm.test(\"invalid full_name field\", function () {",
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid full_name field', function () {",
                   "    pm.expect(pm.response.json().message).to.include('full_name');",
                   "});"
                 ],
@@ -805,18 +1138,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/users",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"full_name\": \"\",\n  \"username\": \"x\",\n  \"password\": \"y\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         },
@@ -827,8 +1154,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
-                  "pm.test(\"invalid password field\", function () {",
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid password field', function () {",
                   "    pm.expect(pm.response.json().message).to.include('password');",
                   "});"
                 ],
@@ -838,18 +1165,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"any\",\n  \"password\": \"\"\n}"
-            },
-            "description": ""
+            }
           },
           "response": []
         },
@@ -860,8 +1181,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"401 Unauthorized\", function () { pm.response.to.have.status(401); });",
-                  "pm.test(\"invalid credentials\", function () {",
+                  "pm.test('401 Unauthorized', function () { pm.response.to.have.status(401); });",
+                  "pm.test('invalid credentials', function () {",
                   "    pm.expect(pm.response.json().message).to.eql('invalid credentials');",
                   "});"
                 ],
@@ -871,18 +1192,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/auth/login",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"invalid-user\",\n  \"password\": \"invalid-password\"\n}"
-            },
-            "description": ""
+              "raw": "{\n  \"username\": \"no-such-user-xyz\",\n  \"password\": \"wrong-password\"\n}"
+            }
           },
           "response": []
         },
@@ -893,8 +1208,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
-                  "pm.test(\"invalid limit parameter\", function () {",
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid limit parameter', function () {",
                   "    pm.expect(pm.response.json().message).to.include('limit');",
                   "});"
                 ],
@@ -905,8 +1220,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/events?limit=not-a-number",
-            "description": ""
+            "url": "{{baseUrl}}/events?limit=not-a-number"
           },
           "response": []
         },
@@ -917,8 +1231,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
-                  "pm.test(\"invalid category field\", function () {",
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid category field', function () {",
                   "    pm.expect(pm.response.json().message).to.include('category');",
                   "});"
                 ],
@@ -928,18 +1242,12 @@
           ],
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": "{{baseUrl}}/events/{{eventId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"category\": \"invalid\"\n}"
-            },
-            "description": "task4"
+              "raw": "{\n  \"category\": \"invalid-category\"\n}"
+            }
           },
           "response": []
         },
@@ -950,8 +1258,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"400 Bad Request\", function () { pm.response.to.have.status(400); });",
-                  "pm.test(\"invalid limit field\", function () {",
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid limit field', function () {",
                   "    pm.expect(pm.response.json().message).to.include('limit');",
                   "});"
                 ],
@@ -962,8 +1270,110 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/users?limit=bad",
-            "description": "task4"
+            "url": "{{baseUrl}}/users?limit=bad"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{id}/reviews (400 missing rating)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid rating field', function () {",
+                  "    pm.expect(pm.response.json().message).to.include('rating');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Нет рейтинга\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /events/{id}/reviews (400 rating out of range)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('invalid rating field', function () {",
+                  "    pm.expect(pm.response.json().message).to.include('rating');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/events/{{eventId}}/reviews",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 10,\n  \"comment\": \"Рейтинг вне диапазона 1-5\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /events/{id}/reviews (200 empty list for unknown event)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Empty reviews list', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j).to.have.property('reviews');",
+                  "    pm.expect(j.reviews).to.be.an('array').that.is.empty;",
+                  "    pm.expect(j.count).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/events/000000000000000000000000/reviews"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /recommendations (401 no auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401 Unauthorized — no cookie', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/recommendations",
+            "auth": { "type": "noauth" }
           },
           "response": []
         }

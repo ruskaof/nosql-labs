@@ -22,29 +22,27 @@ func (c *Cache) key(userID string) string {
 }
 
 func (c *Cache) Get(ctx context.Context, userID string) ([]event.ListItem, bool, error) {
-	val, err := c.client.HGet(ctx, c.key(userID), "data").Result()
+	val, err := c.client.HGet(ctx, c.key(userID), "events").Result()
 	if err == redis.Nil {
 		return nil, false, nil
 	}
 	if err != nil {
 		return nil, false, err
 	}
-	var result struct {
-		Events []event.ListItem `json:"events"`
-	}
-	if err := json.Unmarshal([]byte(val), &result); err != nil {
+	var events []event.ListItem
+	if err := json.Unmarshal([]byte(val), &events); err != nil {
 		return nil, false, err
 	}
-	return result.Events, true, nil
+	return events, true, nil
 }
 
 func (c *Cache) Set(ctx context.Context, userID string, events []event.ListItem, ttl time.Duration) error {
-	data, err := json.Marshal(map[string]any{"events": events})
+	data, err := json.Marshal(events)
 	if err != nil {
 		return err
 	}
 	pipe := c.client.TxPipeline()
-	pipe.HSet(ctx, c.key(userID), "data", string(data))
+	pipe.HSet(ctx, c.key(userID), "events", string(data))
 	pipe.Expire(ctx, c.key(userID), ttl)
 	_, err = pipe.Exec(ctx)
 	return err

@@ -42,8 +42,8 @@ func (s *Store) AddLike(ctx context.Context, userID, eventID string) error {
 	defer session.Close(ctx)
 	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		_, err := tx.Run(ctx,
-			`MATCH (u:User {id: $userID})
-			 MATCH (e:Event {id: $eventID})
+			`MERGE (u:User {id: $userID})
+			 MERGE (e:Event {id: $eventID})
 			 MERGE (u)-[:LIKED]->(e)`,
 			map[string]any{"userID": userID, "eventID": eventID},
 		)

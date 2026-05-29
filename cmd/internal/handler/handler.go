@@ -7,6 +7,7 @@ import (
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/db/user"
 	"nosql-labs/cmd/internal/reaction"
+	"nosql-labs/cmd/internal/review"
 )
 
 type HttpHandler struct {
@@ -16,6 +17,7 @@ type HttpHandler struct {
 	userStore       *user.UserStore
 	eventStore      *event.EventStore
 	reactionService *reaction.Service
+	reviewService   *review.Service
 }
 
 func NewHttpHandler(
@@ -24,6 +26,7 @@ func NewHttpHandler(
 	userStore *user.UserStore,
 	eventStore *event.EventStore,
 	reactionService *reaction.Service,
+	reviewService *review.Service,
 ) *HttpHandler {
 	return &HttpHandler{
 		cfg:             cfg,
@@ -32,6 +35,7 @@ func NewHttpHandler(
 		userStore:       userStore,
 		eventStore:      eventStore,
 		reactionService: reactionService,
+		reviewService:   reviewService,
 	}
 }
 

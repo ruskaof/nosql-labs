@@ -11,6 +11,7 @@ import (
 	"nosql-labs/cmd/internal/db/user"
 	"nosql-labs/cmd/internal/handler"
 	"nosql-labs/cmd/internal/reaction"
+	"nosql-labs/cmd/internal/review"
 	"strconv"
 	"strings"
 	"time"
@@ -68,7 +69,16 @@ func main() {
 		eventStore,
 	)
 
-	h := handler.NewHttpHandler(cfg, store, userStore, eventStore, reactionService)
+	reviewStore := review.NewCassandraStore(cassandraSession)
+	reviewCache := review.NewCache(rdb)
+	reviewService := review.NewService(
+		reviewStore,
+		reviewCache,
+		time.Duration(cfg.AppEventReviewsTTL)*time.Second,
+		eventStore,
+	)
+
+	h := handler.NewHttpHandler(cfg, store, userStore, eventStore, reactionService, reviewService)
 	http.HandleFunc("/health", h.HealthHandler)
 	http.HandleFunc("/session", h.SessionHandler)
 	http.HandleFunc("/users", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
@@ -116,15 +126,35 @@ func main() {
 		}
 		if strings.HasSuffix(path, "/like") {
 			id := strings.TrimSuffix(path, "/like")
-			id = strings.TrimSuffix(id, "/")
 			h.PutEventLike(w, r, id)
 			return
 		}
 		if strings.HasSuffix(path, "/dislike") {
 			id := strings.TrimSuffix(path, "/dislike")
-			id = strings.TrimSuffix(id, "/")
 			h.PutEventDislike(w, r, id)
 			return
+		}
+		if idx := strings.Index(path, "/reviews/"); idx != -1 {
+			eventID := path[:idx]
+			reviewID := path[idx+len("/reviews/"):]
+			if eventID != "" && reviewID != "" {
+				h.PatchEventReview(w, r, eventID, reviewID)
+				return
+			}
+		}
+		if strings.HasSuffix(path, "/reviews") {
+			eventID := strings.TrimSuffix(path, "/reviews")
+			if eventID != "" {
+				switch r.Method {
+				case http.MethodGet:
+					h.ListEventReviews(w, r, eventID)
+				case http.MethodPost:
+					h.CreateEventReview(w, r, eventID)
+				default:
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+				return
+			}
 		}
 		id := path
 		switch r.Method {

@@ -1,0 +1,103 @@
+// EventHub — логическая схема данных по хранилищам.
+// Просмотр: https://dbdiagram.io/d (вставьте содержимое файла)
+// или установите VSCode-расширение "DBML".
+//
+// EventHub использует 4 NoSQL-хранилища. Эта схема описывает их логически:
+// связи между сущностями (created_by, event_id) являются прикладными —
+// движки NoSQL не обеспечивают ссылочную целостность.
+
+Project EventHub {
+  database_type: 'NoSQL (MongoDB, Cassandra, Redis, Neo4j)'
+  Note: 'Логическая модель данных сервиса EventHub'
+}
+
+// ───────────────────────────── MongoDB ─────────────────────────────
+
+Table users {
+  id           varchar [pk, note: 'ObjectID документа (_id)']
+  full_name    varchar
+  username     varchar [unique, not null]
+  password_hash varchar [note: 'bcrypt']
+
+  Note: 'MongoDB, коллекция "users". Уникальный индекс по username.'
+}
+
+Table events {
+  id          varchar [pk, note: 'ObjectID документа (_id)']
+  title       varchar [not null, note: 'Индекс; уникальность по бизнес-логике']
+  category    varchar [note: 'meetup | concert | exhibition | party | other']
+  price       integer [note: 'Необязательная цена в минимальных единицах']
+  description varchar
+  address     varchar [note: 'location.address']
+  city        varchar [note: 'location.city (необязательно)']
+  created_at  timestamp
+  created_by  varchar [not null, note: 'users.id организатора; ключ шардирования (hashed)']
+  started_at  timestamp
+  finished_at timestamp
+
+  Note: 'MongoDB, коллекция "events". Шардируется по created_by (hashed). Индексы: title, (title, created_by), created_by.'
+}
+
+// ──────────────────────────── Cassandra ────────────────────────────
+
+Table event_reactions {
+  event_id   varchar [note: 'Часть partition key']
+  created_by varchar [note: 'Clustering key — users.id']
+  like_value tinyint [note: '1 = лайк, -1 = дизлайк']
+  created_at timestamp
+
+  indexes {
+    (event_id, created_by) [pk]
+  }
+  Note: 'Cassandra, таблица "event_reactions". PRIMARY KEY ((event_id), created_by) — одна реакция на пользователя на мероприятие.'
+}
+
+Table event_reviews {
+  event_id   varchar [note: 'Часть partition key']
+  created_by varchar [note: 'Clustering key — users.id']
+  id         uuid    [note: 'Идентификатор отзыва']
+  rating     tinyint [note: 'Оценка 1–5']
+  comment    varchar [note: 'До 300 символов']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (event_id, created_by) [pk]
+  }
+  Note: 'Cassandra, таблица "event_reviews". PRIMARY KEY ((event_id), created_by) — один отзыв на пользователя на мероприятие.'
+}
+
+// ────────────────────────────── Redis ──────────────────────────────
+
+Table redis_session {
+  key        varchar [pk, note: 'sid:{session_id}']
+  created_at timestamp
+  updated_at timestamp
+  user_id    varchar [note: 'users.id, если сессия авторизована; иначе пусто']
+
+  Note: 'Redis hash + TTL (APP_USER_SESSION_TTL). Аутентификация по cookie X-Session-Id.'
+}
+
+Table redis_cache {
+  key   varchar [pk]
+  value varchar
+
+  Note: '''Redis-кэши (Cache-Aside + TTL):
+  • event:{md5(title)}:reactions → hash {likes, dislikes}
+  • event:{md5(title)}:reviews   → hash {count, rating}
+  • user:{user_id}:recomms       → hash {events: JSON}'''
+}
+
+// ────────────────── Neo4j (граф рекомендаций) ──────────────────
+// Узлы:  (:User {id})  (:Event {id, title})
+// Связи: (:User)-[:LIKED]->(:Event)
+// Полные данные мероприятий хранятся в MongoDB; в графе — только связи.
+
+// ─────────────────── Прикладные связи (логические) ───────────────────
+
+Ref: events.created_by > users.id
+Ref: event_reactions.created_by > users.id
+Ref: event_reactions.event_id > events.id
+Ref: event_reviews.created_by > users.id
+Ref: event_reviews.event_id > events.id
+Ref: redis_session.user_id > users.id

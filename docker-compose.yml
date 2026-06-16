@@ -16,8 +16,26 @@ services:
         condition: service_healthy
       cassandra-init:
         condition: service_completed_successfully
+      neo4j:
+        condition: service_healthy
     networks:
       - main-network
+
+  neo4j:
+    image: neo4j:5
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+    networks:
+      - main-network
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
 
   redis:
     image: redis:8.6.1

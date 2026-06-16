@@ -67,6 +67,11 @@ func (h *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.graphStore.EnsureUser(ctx, userID.Hex()); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	sessionID, err := session.GenerateID()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

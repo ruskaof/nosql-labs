@@ -6,18 +6,22 @@ import (
 	"nosql-labs/cmd/internal/db/event"
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/db/user"
+	"nosql-labs/cmd/internal/graph"
 	"nosql-labs/cmd/internal/reaction"
+	"nosql-labs/cmd/internal/recommendation"
 	"nosql-labs/cmd/internal/review"
 )
 
 type HttpHandler struct {
-	cfg             *config.ApplicationConfig
-	sessionHandler  *SessionHandler
-	sessionStore    session.SessionStore
-	userStore       *user.UserStore
-	eventStore      *event.EventStore
-	reactionService *reaction.Service
-	reviewService   *review.Service
+	cfg                   *config.ApplicationConfig
+	sessionHandler        *SessionHandler
+	sessionStore          session.SessionStore
+	userStore             *user.UserStore
+	eventStore            *event.EventStore
+	reactionService       *reaction.Service
+	reviewService         *review.Service
+	graphStore            *graph.Store
+	recommendationService *recommendation.Service
 }
 
 func NewHttpHandler(
@@ -27,15 +31,19 @@ func NewHttpHandler(
 	eventStore *event.EventStore,
 	reactionService *reaction.Service,
 	reviewService *review.Service,
+	graphStore *graph.Store,
+	recommendationService *recommendation.Service,
 ) *HttpHandler {
 	return &HttpHandler{
-		cfg:             cfg,
-		sessionHandler:  NewSessionHandler(cfg, sessionStore),
-		sessionStore:    sessionStore,
-		userStore:       userStore,
-		eventStore:      eventStore,
-		reactionService: reactionService,
-		reviewService:   reviewService,
+		cfg:                   cfg,
+		sessionHandler:        NewSessionHandler(cfg, sessionStore),
+		sessionStore:          sessionStore,
+		userStore:             userStore,
+		eventStore:            eventStore,
+		reactionService:       reactionService,
+		reviewService:         reviewService,
+		graphStore:            graphStore,
+		recommendationService: recommendationService,
 	}
 }
 

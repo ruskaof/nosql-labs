@@ -13,27 +13,31 @@ import (
 var cassandraIdentifierPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,47}$`)
 
 type ApplicationConfig struct {
-	Port                 int
-	Host                 string
-	AppUserSessionTTL    int
-	RedisHost            string
-	RedisPort            int
-	RedisPassword        string
-	RedisDB              int
-	MongoDatabase        string
-	MongoHost            string
-	MongoPort            int
-	MongoUser            string
-	MongoPassword        string
-	MongoAuthSource      string
-	AppLikeTTL           int
-	AppEventReviewsTTL   int
-	CassandraHosts       []string
-	CassandraPort        int
-	CassandraUsername    string
-	CassandraPassword    string
-	CassandraKeyspace    string
-	CassandraConsistency string
+	Port                   int
+	Host                   string
+	AppUserSessionTTL      int
+	RedisHost              string
+	RedisPort              int
+	RedisPassword          string
+	RedisDB                int
+	MongoDatabase          string
+	MongoHost              string
+	MongoPort              int
+	MongoUser              string
+	MongoPassword          string
+	MongoAuthSource        string
+	AppLikeTTL             int
+	AppEventReviewsTTL     int
+	AppRecommendationsTTL  int
+	CassandraHosts         []string
+	CassandraPort          int
+	CassandraUsername      string
+	CassandraPassword      string
+	CassandraKeyspace      string
+	CassandraConsistency   string
+	Neo4jURL               string
+	Neo4jUsername          string
+	Neo4jPassword          string
 }
 
 func InitConfig() (*ApplicationConfig, error) {
@@ -165,6 +169,25 @@ func InitConfig() (*ApplicationConfig, error) {
 		cassandraConsistency = "ONE"
 	}
 
+	appRecommendationsTTL := 60
+	if s := os.Getenv("APP_RECOMMENDATIONS_TTL"); s != "" {
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, errors.New("Env variable APP_RECOMMENDATIONS_TTL must be an integer")
+		}
+		if v <= 0 {
+			return nil, errors.New("Env variable APP_RECOMMENDATIONS_TTL must be greater than 0")
+		}
+		appRecommendationsTTL = v
+	}
+
+	neo4jURL := os.Getenv("NEO4J_URL")
+	if neo4jURL == "" {
+		neo4jURL = "bolt://localhost:7687"
+	}
+	neo4jUsername := os.Getenv("NEO4J_USERNAME")
+	neo4jPassword := os.Getenv("NEO4J_PASSWORD")
+
 	return &ApplicationConfig{
 		Port:                 appPort,
 		Host:                 appHost,
@@ -185,8 +208,12 @@ func InitConfig() (*ApplicationConfig, error) {
 		CassandraPort:        cassandraPort,
 		CassandraUsername:    cassandraUsername,
 		CassandraPassword:    cassandraPassword,
-		CassandraKeyspace:    cassandraKeyspace,
-		CassandraConsistency: cassandraConsistency,
+		CassandraKeyspace:      cassandraKeyspace,
+		CassandraConsistency:   cassandraConsistency,
+		AppRecommendationsTTL:  appRecommendationsTTL,
+		Neo4jURL:               neo4jURL,
+		Neo4jUsername:          neo4jUsername,
+		Neo4jPassword:          neo4jPassword,
 	}, nil
 }
 

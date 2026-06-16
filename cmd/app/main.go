@@ -9,14 +9,17 @@ import (
 	"nosql-labs/cmd/internal/db/event"
 	"nosql-labs/cmd/internal/db/session"
 	"nosql-labs/cmd/internal/db/user"
+	"nosql-labs/cmd/internal/graph"
 	"nosql-labs/cmd/internal/handler"
 	"nosql-labs/cmd/internal/reaction"
+	"nosql-labs/cmd/internal/recommendation"
 	"nosql-labs/cmd/internal/review"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
+	neo4jdriver "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -78,7 +81,28 @@ func main() {
 		eventStore,
 	)
 
-	h := handler.NewHttpHandler(cfg, store, userStore, eventStore, reactionService, reviewService)
+	neo4jDriver, err := neo4jdriver.NewDriverWithContext(
+		cfg.Neo4jURL,
+		neo4jdriver.BasicAuth(cfg.Neo4jUsername, cfg.Neo4jPassword, ""),
+	)
+	if err != nil {
+		log.Fatalf("Neo4j connect: %v", err)
+	}
+	defer neo4jDriver.Close(context.Background())
+	if err := neo4jDriver.VerifyConnectivity(ctx); err != nil {
+		log.Fatalf("Neo4j ping: %v", err)
+	}
+
+	graphStore := graph.NewStore(neo4jDriver)
+	recommCache := recommendation.NewCache(rdb)
+	recommService := recommendation.NewService(
+		graphStore,
+		eventStore,
+		recommCache,
+		time.Duration(cfg.AppRecommendationsTTL)*time.Second,
+	)
+
+	h := handler.NewHttpHandler(cfg, store, userStore, eventStore, reactionService, reviewService, graphStore, recommService)
 	http.HandleFunc("/health", h.HealthHandler)
 	http.HandleFunc("/session", h.SessionHandler)
 	http.HandleFunc("/users", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +131,7 @@ func main() {
 	})
 	http.HandleFunc("/auth/login", h.WithPostSessionRefresh(h.Login))
 	http.HandleFunc("/auth/logout", h.Logout)
+	http.HandleFunc("/recommendations", h.GetRecommendations)
 	http.HandleFunc("/events", h.WithPostSessionRefresh(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
